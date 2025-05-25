@@ -1,0 +1,5 @@
+streamlit>=1.25
+firebase-admin>=6.2.0
+requests
+python-dotenv
+
