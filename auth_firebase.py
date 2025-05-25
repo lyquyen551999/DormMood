@@ -17,7 +17,10 @@ if not firebase_admin._apps:
         "auth_provider_x509_cert_url": st.secrets["firebase"]["auth_provider_x509_cert_url"],
         "client_x509_cert_url": st.secrets["firebase"]["client_x509_cert_url"]
     })
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        "databaseURL": st.secrets["firebase"]["databaseURL"]
+    })
+
 
 def firebase_register(email, password):
     try:
