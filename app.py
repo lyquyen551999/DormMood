@@ -1,6 +1,8 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
 import uuid
+import auth_firebase  
+
 
 # Cấu hình layout và ẩn sidebar
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered", initial_sidebar_state="collapsed")
