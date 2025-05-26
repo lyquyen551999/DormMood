@@ -94,4 +94,54 @@ elif st.session_state["page"] == "chat_match":
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
-    import chat_room  # Gọi file riêng nếu bạn tách, hoặc dán nội dung trực tiếp vào đây
+    # ===== NỘI DUNG TỪ chat_room.py =====
+    import streamlit as st
+    from chat_firebase import ChatFirebase
+    import time
+
+    st.set_page_config(page_title="💬 Realtime Chat", page_icon="💬")
+    st.title("💬 Realtime Chat Room")
+
+    chat_db = ChatFirebase()
+    user_id = st.session_state.get("user_token", "anonymous")
+    if "nickname" not in st.session_state:
+        st.session_state["nickname"] = f"User-{user_id[-5:]}"
+    nickname = st.text_input("Your nickname:", st.session_state["nickname"])
+    st.session_state["nickname"] = nickname
+
+    mode = st.session_state.get("chat_mode", "1-1")
+    partner_id = st.session_state.get("partner_id")
+    is_group = False
+
+    if mode == "1-1" and partner_id:
+        room_id = "_".join(sorted([user_id, partner_id]))
+    else:
+        room_id = "group_room"
+        is_group = True
+
+    if not chat_db.room_exists(room_id):
+        members = [user_id] if is_group else [user_id, partner_id]
+        chat_db.create_room(room_id, members, is_group)
+
+    with st.form("chat_form", clear_on_submit=True):
+        text = st.text_input("Your message:")
+        submitted = st.form_submit_button("Send")
+        if submitted and text.strip():
+            chat_db.send_message(room_id, user_id, nickname, text)
+
+    st.markdown("---")
+    st.subheader("📨 Chat messages")
+    messages = chat_db.get_messages(room_id)
+
+    if messages:
+        for msg in messages[-50:]:
+            sender = msg.get("display_name", "Unknown")
+            content = msg.get("text", "")
+            timestamp = msg.get("timestamp", "")
+            st.markdown(f"**{sender}** ({timestamp}): {content}")
+    else:
+        st.info("No messages yet.")
+
+    time.sleep(5)
+    st.rerun()
+
