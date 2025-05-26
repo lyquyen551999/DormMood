@@ -41,9 +41,12 @@ if st.session_state["page"] == "login":
 
     with tabs[1]:
         if st.button("Continue as Anonymous"):
-            st.session_state["user_token"] = f"anon-{uuid.uuid4()}"
+            anon_id = f"anon-{uuid.uuid4()}"
+            st.session_state["user_token"] = anon_id
+            st.session_state["nickname"] = "Stranger"
             st.session_state["page"] = "mood_journal"
             st.rerun()
+
 
     with tabs[2]:
         new_email = st.text_input("Email", key="register_email")
@@ -60,7 +63,7 @@ if st.session_state["page"] == "login":
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
-    st.write(f"Welcome, user: `{st.session_state['user_token']}`")
+    st.write(f"Welcome, user: **{st.session_state.get('nickname', st.session_state['user_token'])}**")
 
     mood = st.selectbox("How do you feel today?", ["😊 Happy", "😢 Sad", "😠 Angry", "😰 Anxious", "😴 Tired"])
     note = st.text_area("Write your thoughts...")
