@@ -251,8 +251,10 @@ elif st.session_state["page"] == "chat_room":
         st.session_state.pop("partner_id", None)
         st.session_state.pop("partner_name", None)
         st.session_state.pop("chat_mode", None)
+        st.session_state.pop("matching_initialized", None)  # 💥 THÊM DÒNG NÀY
         st.session_state["page"] = "mood_journal"
         st.rerun()
+
 
     time.sleep(5)
     st.rerun()
