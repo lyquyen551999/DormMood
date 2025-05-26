@@ -163,7 +163,7 @@ elif st.session_state["page"] == "chat_match":
 
         # Nếu cả hai đã xác nhận
         current_confirmations = confirmation_ref.get() or {}
-        if current_confirmations.get(user_id) == True and current_confirmations.get(match["partner_id"]) == True:
+        if set(current_confirmations.keys()) == {user_id, match["partner_id"]} and all(current_confirmations.values()):
             room_ref = db.reference("/chat_rooms").child(match["room_id"])
             if not room_ref.get():
                 room_ref.set({
