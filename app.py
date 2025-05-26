@@ -118,8 +118,8 @@ elif st.session_state["page"] == "chat_match":
 
     if match_result["success"]:
         # Hiển thị lựa chọn xác nhận match
-       user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
-
+        user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
+        
         if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
@@ -148,6 +148,7 @@ elif st.session_state["page"] == "chat_match":
                 st.info("✅ Waiting for the other user to confirm...")
                 time.sleep(5)
                 st.rerun()
+
 
 
         
