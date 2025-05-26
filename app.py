@@ -1,32 +1,33 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
 import uuid
-from matchmaker import MatchMaker
+import chat_room  # ✅ import thủ công các module cần dùng
+import matchmaker  # Chỉ cần nếu gọi trong login hoặc preload
+import mood_journal  # Gợi ý nếu bạn đã chia file riêng
+import chat_match  # Nếu tách file riêng
+# Nếu không chia file riêng, thì viết từng phần trực tiếp (xem ví dụ dưới)
 
+# Cấu hình
+st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
-# Cấu hình layout và ẩn sidebar
-st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered", initial_sidebar_state="collapsed")
-
-# CSS để ẩn sidebar hoàn toàn
-hide_sidebar = """
+# Ẩn sidebar
+st.markdown("""
     <style>
         [data-testid="stSidebar"] { display: none; }
         [data-testid="collapsedControl"] { display: none; }
     </style>
-"""
-st.markdown(hide_sidebar, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# Khởi tạo session state
+# Khởi tạo trạng thái trang
 if "page" not in st.session_state:
     st.session_state["page"] = "login"
 
-# LOGIN PAGE
+# ========== LOGIN PAGE ==========
 if st.session_state["page"] == "login":
     st.title("🔐 DormMood Login Interface")
     st.write("Please choose a login method:")
     tabs = st.tabs(["🔐 Regular Login", "🕵️ Anonymous Login", "📝 Register"])
 
-    # Regular Login
     with tabs[0]:
         email = st.text_input("Email", key="login_email")
         password = st.text_input("Password", type="password", key="login_password")
@@ -39,14 +40,12 @@ if st.session_state["page"] == "login":
             else:
                 st.error("❌ Login failed")
 
-    # Anonymous Login
     with tabs[1]:
         if st.button("Continue as Anonymous"):
             st.session_state["user_token"] = f"anon-{uuid.uuid4()}"
             st.session_state["page"] = "mood_journal"
             st.rerun()
 
-    # Register
     with tabs[2]:
         new_email = st.text_input("Email", key="register_email")
         new_password = st.text_input("Password", type="password", key="register_password")
@@ -59,7 +58,7 @@ if st.session_state["page"] == "login":
             else:
                 st.error("❌ Registration failed")
 
-# MOOD JOURNAL PAGE
+# ========== MOOD JOURNAL PAGE ==========
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
     st.write(f"Welcome, user: `{st.session_state['user_token']}`")
@@ -89,29 +88,10 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state.clear()
         st.rerun()
 
-# CHAT MATCHING PAGE
+# ========== CHAT MATCHING PAGE ==========
 elif st.session_state["page"] == "chat_match":
-    
-    st.title("💬 Chat Matching")
+    import chat_match  # Gọi file riêng nếu bạn tách, hoặc dán nội dung trực tiếp vào đây
 
-    emotion = st.session_state.get("latest_emotion", "neutral")
-    user_id = st.session_state.get("user_token", "anonymous")
-    st.markdown(f"🧠 Your current emotion: **{emotion}**")
-    st.write("🔍 Searching for someone to talk to...")
-
-    matcher = MatchMaker()
-    nickname = st.session_state.get("nickname", "Anonymous")
-    match_result = matcher.find_match(emotion, user_id, name=nickname)
-    st.write("✅ Match result:", match_result)
-
-    if match_result["success"]:
-        st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
-        st.markdown("✅ You can now enter the chat room.")
-    else:
-        st.error("😢 No suitable match found at the moment. Please try again later.")
-
-    if st.button("← Back to Journal"):
-        st.session_state["page"] = "mood_journal"
-        st.rerun()
-
-   
+# ========== CHAT ROOM ==========
+elif st.session_state["page"] == "chat_room":
+    import chat_room  # Gọi file riêng nếu bạn tách, hoặc dán nội dung trực tiếp vào đây
