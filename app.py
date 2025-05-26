@@ -96,7 +96,7 @@ elif st.session_state["page"] == "chat_match":
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
     st.write("🔍 Searching for someone to talk to...")
 
-    # Step 1: Check if this user is already matched in an existing chat room
+    # ✅ Kiểm tra nếu user đã bị người khác match (trong /chat_rooms)
     room_candidates = db.reference("/chat_rooms").get()
     if room_candidates:
         for room_id, room in room_candidates.items():
