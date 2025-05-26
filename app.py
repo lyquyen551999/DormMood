@@ -131,18 +131,23 @@ elif st.session_state["page"] == "chat_match":
         current_confirmations = confirmation_ref.get() or {}
 
         if current_confirmations.get(user_id) != True:
-            decision = st.radio(f"🤝 {match['partner_name']} is available to chat. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
+            decision = st.radio(
+                f"🤝 {match['partner_name']} is available to chat. Do you want to connect?",
+                ["Yes", "No"], index=None, horizontal=True
+            )
             if decision == "Yes":
                 confirmation_ref.update({user_id: True})
-                st.info("Waiting for your partner to confirm...")
-                st.stop()
+                st.session_state["confirmed"] = True
+                st.info("✅ Waiting for your partner to confirm...")
+                time.sleep(3)
+                st.rerun()
             elif decision == "No":
-                st.info("You declined the match. Looking for someone else...")
-                st.session_state.pop("potential_match")
-                db.reference("/match_confirmations").child(match["room_id"]).delete()
+                st.info("❌ You declined the match. Looking for someone else...")
+                st.session_state.pop("potential_match", None)
+                confirmation_ref.delete()
                 time.sleep(2)
                 st.rerun()
-
+                
         current_confirmations = confirmation_ref.get() or {}
         if current_confirmations.get(user_id) == True and current_confirmations.get(match["partner_id"]) == True:
             db.reference("/waiting_list").child(user_id).delete()
