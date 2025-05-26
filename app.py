@@ -189,5 +189,13 @@ elif st.session_state["page"] == "chat_room":
     else:
         st.info("No messages yet.")
 
+    # ➕ Nút thoát khỏi phòng chat
+    if st.button("🚪 Leave Chat Room"):
+        st.session_state.pop("partner_id", None)
+        st.session_state.pop("partner_name", None)
+        st.session_state.pop("chat_mode", None)
+        st.session_state["page"] = "mood_journal"
+        st.rerun()
+
     time.sleep(5)
     st.rerun()
