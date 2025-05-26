@@ -3,6 +3,7 @@ from matchmaker import MatchMaker
 import threading
 import time
 from firebase_admin import db
+from streamlit_extras.switch_page_button import switch_page
 
 st.set_page_config(page_title="Chat Matching", page_icon="💬")
 
@@ -18,16 +19,12 @@ st.write("🔍 Searching for someone to talk to...")
 matcher = MatchMaker()
 match_result = matcher.find_match(emotion, user_id, name=nickname)
 
+# Sau khi match thành công:
 if match_result["success"]:
-    st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
-    
-    # 💡 Lưu lại partner để vào chat_room
     st.session_state["partner_id"] = match_result["partner_id"]
     st.session_state["partner_name"] = match_result["partner_name"]
     st.session_state["chat_mode"] = "1-1"
-    st.session_state["page"] = "chat_room"
-    st.experimental_rerun()
-
+    switch_page("chat_room")  # Chuyển sang file pages/chat_room.py
 else:
     st.error("😢 No suitable match found at the moment. Please try again later.")
 
