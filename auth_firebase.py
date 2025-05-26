@@ -1,9 +1,8 @@
-
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, auth
 
-# Kiểm tra nếu Firebase chưa được khởi tạo thì mới khởi tạo
+# Khởi tạo Firebase chỉ khi chưa được khởi tạo
 if not firebase_admin._apps:
     cred = credentials.Certificate({
         "type": st.secrets["firebase"]["type"],
@@ -21,12 +20,12 @@ if not firebase_admin._apps:
         "databaseURL": st.secrets["firebase"]["databaseURL"]
     })
 
-
 def firebase_register(email, password):
     try:
         user = auth.create_user(email=email, password=password)
         return True, {"localId": user.uid}
     except Exception as e:
+        st.error(f"❌ Registration failed: {e}")
         return False, str(e)
 
 def firebase_login(email, password):
@@ -42,4 +41,5 @@ def firebase_login(email, password):
     if response.status_code == 200:
         return True, response.json()
     else:
+        st.error(f"❌ Login failed: {response.text}")
         return False, response.text
