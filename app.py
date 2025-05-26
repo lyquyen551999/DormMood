@@ -47,7 +47,6 @@ if st.session_state["page"] == "login":
             st.session_state["page"] = "mood_journal"
             st.rerun()
 
-
     with tabs[2]:
         new_email = st.text_input("Email", key="register_email")
         new_password = st.text_input("Password", type="password", key="register_password")
@@ -91,122 +90,38 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state.clear()
         st.rerun()
 
-# ========== MATCHING ==========
+# ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
     st.title("💬 Chat Matching")
-    user_id = st.session_state.get("user_token", "anonymous")
+    user_id = st.session_state.get("user_token")
     emotion = st.session_state.get("latest_emotion", "neutral")
     nickname = st.session_state.get("nickname", "Anonymous")
 
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
-    st.write("🔍 Searching for someone to talk to...")
+    st.info("🔍 Looking for someone with similar feelings to talk to...")
 
-    # ✅ Kiểm tra nếu user đã bị người khác match (trong /chat_rooms)
-    room_candidates = db.reference("/chat_rooms").get()
-    if room_candidates:
-        for room_id, room in room_candidates.items():
-            members = room.get("members", [])
-            if user_id in members and len(members) == 2:
-                partner_id = [uid for uid in members if uid != user_id][0]
-                st.session_state["partner_id"] = partner_id
-                st.session_state["partner_name"] = "Anonymous"
-                st.session_state["chat_mode"] = "1-1"
-                st.session_state["page"] = "chat_room"
-                st.rerun()
+    # Add user to waiting list
+    db.reference("/waiting_list").child(user_id).set({
+        "emotion": emotion,
+        "name": nickname,
+        "timestamp": time.time()
+    })
 
-    matcher = MatchMaker()
-    match_result = matcher.find_match(emotion, user_id, name=nickname)
-    
-    if match_result["success"]:
-        db.reference("/waiting_list").child(user_id).delete()  # ✅ Xóa khỏi waitlist khi đã được match
-        st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
-        st.session_state["partner_id"] = match_result["partner_id"]
-        st.session_state["partner_name"] = match_result["partner_name"]
-        st.session_state["chat_mode"] = "1-1"
-        st.session_state["page"] = "chat_room"
-        st.rerun()
-    else:
-        st.warning("😢 No suitable match found. Retrying...")
-        st.info("🔄 Retrying match in 5 seconds...")
-
-        if st.button("🛑 Stop Matching and Go Back"):
-            db.reference("/waiting_list").child(user_id).delete()
-            st.session_state["page"] = "mood_journal"
-            st.rerun()
-
-        time.sleep(5)
+    if st.button("🛑 Stop Matching and Go Back"):
+        db.reference("/waiting_list").child(user_id).delete()
+        st.session_state["page"] = "mood_journal"
         st.rerun()
 
-    def heartbeat(user_id):
-        ref = db.reference("/waiting_list").child(user_id)
-        while True:
-            try:
-                ref.update({"timestamp": time.time()})
-                time.sleep(10)
-            except:
-                break
-
-    threading.Thread(target=heartbeat, args=(user_id,), daemon=True).start()
+    time.sleep(5)
+    st.rerun()
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
     st.title("💬 Realtime Chat Room")
-    chat_db = ChatFirebase()
-
-    user_id = st.session_state.get("user_token", "anonymous")
-    if "nickname" not in st.session_state:
-        st.session_state["nickname"] = f"User-{user_id[-5:]}"
-    nickname = st.text_input("Your nickname:", st.session_state["nickname"])
-    st.session_state["nickname"] = nickname
-
-    mode = st.session_state.get("chat_mode", "1-1")
-    partner_id = st.session_state.get("partner_id")
-    is_group = False
-
-    if mode == "1-1" and partner_id:
-        room_id = "_".join(sorted([user_id, partner_id]))
-    else:
-        room_id = "group_room"
-        is_group = True
-
-    if not chat_db.room_exists(room_id):
-        members = [user_id] if is_group else [user_id, partner_id]
-        chat_db.create_room(room_id, members, is_group)
-
-    with st.form("chat_form", clear_on_submit=True):
-        text = st.text_input("Your message:")
-        submitted = st.form_submit_button("Send")
-        if submitted and text.strip():
-            chat_db.send_message(room_id, user_id, nickname, text)
-
-    st.markdown("---")
-    st.subheader("📨 Chat messages")
-    messages = chat_db.get_messages(room_id)
-
-    if messages:
-        for msg in messages[-50:]:
-            sender = msg.get("display_name", "Unknown")
-            content = msg.get("text", "")
-            raw_ts = msg.get("timestamp", "")
-            try:
-                formatted_ts = datetime.fromisoformat(raw_ts).strftime("%Y/%m/%d %H:%M")
-            except:
-                formatted_ts = raw_ts  # fallback nếu lỗi định dạng
-            st.markdown(f"**{sender}** ({formatted_ts}): {content}")
-    else:
-        st.info("No messages yet.")
-
-    # ➕ Nút thoát khỏi phòng chat
-    if st.button("🚪 Leave Chat Room"):
-        # ✅ Xoá phòng chat nếu là 1-1
-        if mode == "1-1" and partner_id:
-            db.reference("/chat_rooms").child(room_id).delete()
+    st.write("🚧 Chat room feature temporarily paused. Return to mood journal.")
+    if st.button("⬅️ Go Back"):
         st.session_state.pop("partner_id", None)
         st.session_state.pop("partner_name", None)
         st.session_state.pop("chat_mode", None)
         st.session_state["page"] = "mood_journal"
         st.rerun()
-
-
-    time.sleep(5)
-    st.rerun()
