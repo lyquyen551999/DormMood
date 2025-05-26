@@ -28,15 +28,17 @@ if match_result["success"]:
     st.session_state["partner_id"] = match_result["partner_id"]
     st.session_state["partner_name"] = match_result["partner_name"]
     st.session_state["chat_mode"] = "1-1"
-    switch_page("chat_room")
 
+    st.session_state["page"] = "chat_room"  # 🟢 Quan trọng
+    st.rerun()
+    
 # Nếu chưa match được
 else:
-    placeholder = st.empty()
-    placeholder.info("🔄 Retrying match in 5 seconds...")
+    st.warning("😢 No suitable match found. Retrying...")
+    st.info("🔄 Retrying match in 5 seconds...")
     time.sleep(5)
-    placeholder.info("🔁 Re-attempting match now...")
-    st.experimental_rerun()
+    st.rerun()
+
 
 
 # 💓 Heartbeat giữ người dùng online
