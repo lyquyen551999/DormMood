@@ -110,6 +110,11 @@ elif st.session_state["page"] == "chat_match":
     else:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
+
+        if st.button("🛑 Stop Matching and Go Back"):
+            st.session_state["page"] = "mood_journal"
+            st.rerun()
+
         time.sleep(5)
         st.rerun()
 
