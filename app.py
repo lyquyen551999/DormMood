@@ -99,6 +99,12 @@ elif st.session_state["page"] == "chat_match":
     nickname = st.session_state.get("nickname", "Anonymous")
     now = time.time()
 
+    # Clean up old entries (>30s)
+    candidates = db.reference("/waiting_list").get()
+    for uid, info in (candidates or {}).items():
+        if time.time() - info.get("timestamp", 0) > 30:
+            db.reference("/waiting_list").child(uid).delete()
+
     # Add user to waiting list with online status
     db.reference("/waiting_list").child(user_id).set({
         "emotion": emotion,
