@@ -176,10 +176,60 @@ elif st.session_state["page"] == "chat_match":
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
     st.title("💬 Realtime Chat Room")
-    st.write("🚧 Chat room feature temporarily paused. Return to mood journal.")
-    if st.button("⬅️ Go Back"):
+    chat_db = ChatFirebase()
+
+    user_id = st.session_state.get("user_token", "anonymous")
+    if "nickname" not in st.session_state:
+        st.session_state["nickname"] = f"User-{user_id[-5:]}"
+    nickname = st.text_input("Your nickname:", st.session_state["nickname"])
+    st.session_state["nickname"] = nickname
+
+    mode = st.session_state.get("chat_mode", "1-1")
+    partner_id = st.session_state.get("partner_id")
+    is_group = False
+
+    if mode == "1-1" and partner_id:
+        room_id = "_".join(sorted([user_id, partner_id]))
+    else:
+        room_id = "group_room"
+        is_group = True
+
+    if not chat_db.room_exists(room_id):
+        members = [user_id] if is_group else [user_id, partner_id]
+        chat_db.create_room(room_id, members, is_group)
+
+    with st.form("chat_form", clear_on_submit=True):
+        text = st.text_input("Your message:")
+        submitted = st.form_submit_button("Send")
+        if submitted and text.strip():
+            chat_db.send_message(room_id, user_id, nickname, text)
+
+    st.markdown("---")
+    st.subheader("📨 Chat messages")
+    messages = chat_db.get_messages(room_id)
+
+    if messages:
+        for msg in messages[-50:]:
+            sender = msg.get("display_name", "Unknown")
+            content = msg.get("text", "")
+            raw_ts = msg.get("timestamp", "")
+            try:
+                formatted_ts = datetime.fromisoformat(raw_ts).strftime("%Y/%m/%d %H:%M")
+            except:
+                formatted_ts = raw_ts
+            st.markdown(f"**{sender}** ({formatted_ts}): {content}")
+    else:
+        st.info("No messages yet.")
+
+    if st.button("🚪 Leave Chat Room"):
+        if mode == "1-1" and partner_id:
+            db.reference("/chat_rooms").child(room_id).delete()
         st.session_state.pop("partner_id", None)
         st.session_state.pop("partner_name", None)
         st.session_state.pop("chat_mode", None)
         st.session_state["page"] = "mood_journal"
         st.rerun()
+
+    time.sleep(5)
+    st.rerun()
+
