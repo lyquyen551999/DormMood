@@ -1,13 +1,11 @@
 import time
 from firebase_admin import db
-import atexit
 
 class MatchMaker:
     def __init__(self):
         self.waiting_list_ref = db.reference("/waiting_list")
 
     def find_match(self, emotion, user_id, name="Anonymous"):
-        self.cleanup_waitlist()  # 🧹 Dọn những user đã quá 30s không ping
         candidates = self.waiting_list_ref.get()
         print(f"[MatchMaker] Current waiting list: {candidates}")
 
@@ -16,23 +14,28 @@ class MatchMaker:
             return {"success": False}
 
         for uid, info in candidates.items():
-            if uid != user_id and info.get("emotion") == emotion:
-                # Nếu đã offline quá 30 giây → loại bỏ
-                last_seen = info.get("timestamp", 0)
-                is_recent = time.time() - last_seen <= 30
-                if not is_recent:
-                    self.waiting_list_ref.child(uid).delete()
-                    continue
-                    
-                # ✅ Match hợp lệ
+            if uid == user_id:
+                continue  # Không tự match với mình
+
+            partner_emotion = info.get("emotion")
+            last_seen = info.get("timestamp", 0)
+            is_recent = time.time() - last_seen <= 30  # Chỉ giữ người vừa ping
+
+            if partner_emotion == emotion and is_recent:
+                # ✅ Tìm thấy người phù hợp và còn hoạt động
                 self.waiting_list_ref.child(uid).delete()
                 return {
                     "success": True,
                     "partner_id": uid,
                     "partner_name": info.get("name", "Anonymous")
                 }
+            else:
+                # 🧹 Loại khỏi danh sách nếu quá 30s
+                if not is_recent:
+                    print(f"[CLEANUP] Removing {uid} from waitlist (stale)")
+                    self.waiting_list_ref.child(uid).delete()
 
-        # No match, add self to waiting list
+        # Không match được ai → thêm chính mình vào danh sách
         self._add_to_waiting_list(emotion, user_id, name)
         print(f"[MatchMaker] No match found. Added {user_id} to waitlist.")
         return {"success": False}
@@ -41,26 +44,6 @@ class MatchMaker:
         self.waiting_list_ref.child(user_id).set({
             "emotion": emotion,
             "name": name,
-            "timestamp": time.time(),
-            "is_online": True
+            "timestamp": time.time()
         })
         print(f"[MatchMaker] Added {user_id} to waitlist with emotion {emotion}")
-
-    def cleanup_waitlist(self):
-        now = time.time()
-        candidates = self.waiting_list_ref.get()
-        if not candidates:
-            return
-
-        for uid, info in candidates.items():
-            ts = info.get("timestamp", 0)
-            online = info.get("is_online", False)
-            if not online or now - ts > 30:
-                print(f"[CLEANUP] Removing {uid} from waitlist (offline/timeout)")
-                self.waiting_list_ref.child(uid).delete()
-
-    def cleanup_on_exit(user_id):
-        db.reference("/waiting_list").child(user_id).delete()
-    
-    atexit.register(cleanup_on_exit, user_id)
-
