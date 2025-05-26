@@ -86,8 +86,8 @@ elif st.session_state["page"] == "mood_journal":
         st.rerun()
 
     if st.button("Log out"):
-        db.reference("/waiting_list").child(st.session_state["user_token"]).delete()  # ❌ Xóa khỏi waitlist nếu có
-        db.reference("/match_confirmations").child(st.session_state["user_token"]).delete()  # ❌ Xóa xác nhận nếu có
+        db.reference("/waiting_list").child(st.session_state["user_token"]).delete()
+        db.reference("/match_confirmations").child(st.session_state["user_token"]).delete()
         st.session_state.clear()
         st.rerun()
 
@@ -101,14 +101,12 @@ elif st.session_state["page"] == "chat_match":
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
     st.info("🔍 Looking for someone with similar feelings to talk to...")
 
-    # Add user to waiting list
     db.reference("/waiting_list").child(user_id).set({
         "emotion": emotion,
         "name": nickname,
         "timestamp": time.time()
     })
 
-    # Step 2: try to find a match
     candidates = db.reference("/waiting_list").get()
     for uid, info in (candidates or {}).items():
         if uid != user_id and info.get("emotion") == emotion:
@@ -130,6 +128,8 @@ elif st.session_state["page"] == "chat_match":
             decision = st.radio(f"🤝 {match['partner_name']} is available to chat. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
             if decision == "Yes":
                 confirmation_ref.update({user_id: True})
+                st.info("Waiting for your partner to confirm...")
+                st.stop()
             elif decision == "No":
                 st.info("You declined the match. Looking for someone else...")
                 st.session_state.pop("potential_match")
@@ -137,7 +137,6 @@ elif st.session_state["page"] == "chat_match":
                 time.sleep(2)
                 st.rerun()
 
-        # Refresh confirmation
         current_confirmations = confirmation_ref.get() or {}
         if current_confirmations.get(user_id) == True and current_confirmations.get(match["partner_id"]) == True:
             db.reference("/waiting_list").child(user_id).delete()
