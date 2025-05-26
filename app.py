@@ -123,20 +123,20 @@ elif st.session_state["page"] == "chat_match":
                     "partner_name": info.get("name", "Stranger")
                 }
                 break
-    
-        # Nếu có ai đó đã match với mình trước (mình bị “bị động”)
-    confirmations = db.reference("/match_confirmations").get() or {}
-    for room_id, room_data in confirmations.items():
-        if user_id in room_data:
-            other_id = [uid for uid in room_data.keys() if uid != user_id]
-            if other_id:
-                partner_id = other_id[0]
-                st.session_state["potential_match"] = {
-                    "partner_id": partner_id,
-                    "room_id": room_id,
-                    "partner_name": db.reference("/waiting_list").child(partner_id).get().get("name", "Stranger")
-                }
-                break
+                
+            # Nếu có ai đó đã match với mình trước (mình bị “bị động”)
+        confirmations = db.reference("/match_confirmations").get() or {}
+        for room_id, room_data in confirmations.items():
+            if user_id in room_data:
+                other_id = [uid for uid in room_data.keys() if uid != user_id]
+                if other_id:
+                    partner_id = other_id[0]
+                    st.session_state["potential_match"] = {
+                        "partner_id": partner_id,
+                        "room_id": room_id,
+                        "partner_name": db.reference("/waiting_list").child(partner_id).get().get("name", "Stranger")
+                    }
+                    break
 
 
     # Matching confirmation logic
