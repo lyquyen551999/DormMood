@@ -97,28 +97,32 @@ elif st.session_state["page"] == "chat_match":
     user_id = st.session_state.get("user_token")
     emotion = st.session_state.get("latest_emotion", "neutral")
     nickname = st.session_state.get("nickname", "Anonymous")
+    now = time.time()
 
-    st.markdown(f"🧠 Your current emotion: **{emotion}**")
-    st.info("🔍 Looking for someone with similar feelings to talk to...")
-
+    # Add user to waiting list with online status
     db.reference("/waiting_list").child(user_id).set({
         "emotion": emotion,
         "name": nickname,
-        "timestamp": time.time()
+        "timestamp": now,
+        "is_online": True,
+        "status": "matching"
     })
 
+    # Match candidate filtering
     candidates = db.reference("/waiting_list").get()
     for uid, info in (candidates or {}).items():
-        if uid != user_id and info.get("emotion") == emotion:
-            partner_id = uid
-            room_id = "_".join(sorted([user_id, partner_id]))
-            st.session_state["potential_match"] = {
-                "partner_id": partner_id,
-                "room_id": room_id,
-                "partner_name": info.get("name", "Stranger")
-            }
-            break
+        if uid != user_id and info.get("emotion") == emotion and info.get("is_online") and now - info.get("timestamp", now) < 30:
+            if info.get("status") == "matching":
+                partner_id = uid
+                room_id = "_".join(sorted([user_id, partner_id]))
+                st.session_state["potential_match"] = {
+                    "partner_id": partner_id,
+                    "room_id": room_id,
+                    "partner_name": info.get("name", "Stranger")
+                }
+                break
 
+    # Matching confirmation logic
     if "potential_match" in st.session_state:
         match = st.session_state["potential_match"]
         confirmation_ref = db.reference("/match_confirmations").child(match["room_id"])
@@ -142,7 +146,7 @@ elif st.session_state["page"] == "chat_match":
             db.reference("/waiting_list").child(user_id).delete()
             db.reference("/waiting_list").child(match["partner_id"]).delete()
             db.reference("/match_confirmations").child(match["room_id"]).delete()
-            db.reference("/chat_rooms").child(match["room_id"]).set({"members": [user_id, match["partner_id"]], "timestamp": time.time()})
+            db.reference("/chat_rooms").child(match["room_id"]).set({"members": [user_id, match["partner_id"]], "timestamp": now})
             st.session_state["partner_id"] = match["partner_id"]
             st.session_state["partner_name"] = match["partner_name"]
             st.session_state["chat_mode"] = "1-1"
