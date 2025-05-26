@@ -144,6 +144,15 @@ elif st.session_state["page"] == "chat_match":
     
 
     if match_result["success"] and "partner_id" not in st.session_state:
+        # Kiểm tra xem đối phương còn online
+        partner_id = match_result["partner_id"]
+        partner_online_ref = db.reference("/waiting_list").child(partner_id).get()
+        if not partner_online_ref:
+            st.warning("❌ The other user is no longer online. Looking for a new match...")
+            db.reference("/waiting_list").child(user_id).delete()
+            time.sleep(3)
+            st.rerun()
+
         # Hiển thị lựa chọn xác nhận match
         user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
 
@@ -157,8 +166,25 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(3)
             st.rerun()
 
-        if user_decision == "No":
-            st.info("⏳ Waiting for another match...")
+        # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
+        confirmation_ref = db.reference("/match_confirmations")
+        room_id = "_".join(sorted([user_id, partner_id]))
+        confirmation_ref.child(room_id).update({ user_id: True })
+
+        confirmations = confirmation_ref.child(room_id).get()
+        if confirmations and partner_id in confirmations:
+            st.success(f"🎉 Both accepted! Matched with: {match_result['partner_name']} (ID: {partner_id})")
+            st.session_state["partner_id"] = partner_id
+            st.session_state["partner_name"] = match_result["partner_name"]
+            st.session_state["chat_mode"] = "1-1"
+            db.reference("/waiting_list").child(user_id).delete()
+            db.reference("/waiting_list").child(partner_id).delete()
+            db.reference("/chat_rooms").child(room_id).set({"members": [user_id, partner_id], "timestamp": time.time()})
+            confirmation_ref.child(room_id).delete()
+            st.session_state["page"] = "chat_room"
+            st.rerun()
+        else:
+            st.info("✅ Waiting for the other user to confirm...")
             time.sleep(5)
             st.rerun()
 
