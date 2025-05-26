@@ -125,7 +125,7 @@ elif st.session_state["page"] == "chat_match":
                             st.session_state["page"] = "chat_room"
                             st.rerun()
                     elif user_id in confirmations and all(uid in confirmations for uid in members):
-                        partner_id = [uid for uid in members if uid != user_id][0]
+                partner_id = [uid for uid in members if uid != user_id][0]
                         st.session_state["partner_id"] = partner_id
                         st.session_state["partner_name"] = "Stranger"
                         st.session_state["chat_mode"] = "1-1"
@@ -134,9 +134,12 @@ elif st.session_state["page"] == "chat_match":
 
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
+
+    if "partner_id" in match_result:
+        st.session_state["pending_partner_id"] = match_result["partner_id"]
     
 
-    if match_result["success"]:
+    if match_result["success"] and "partner_id" not in st.session_state:
         # Hiển thị lựa chọn xác nhận match
         user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
 
@@ -150,7 +153,7 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(3)
             st.rerun()
 
-        if user_decision == "No":
+                if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
             st.rerun()
@@ -179,7 +182,7 @@ elif st.session_state["page"] == "chat_match":
             st.rerun()
 
         
-    elif not match_result["success"] and "partner_id" not in st.session_state and not room_candidates:
+    elif not match_result["success"] and "partner_id" not in st.session_state and not room_candidates and "pending_partner_id" not in st.session_state:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
 
