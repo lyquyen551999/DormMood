@@ -87,18 +87,19 @@ elif st.session_state["page"] == "mood_journal":
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
     st.title("💬 Chat Matching")
+
     user_id = st.session_state.get("user_token")
     emotion = st.session_state.get("latest_emotion", "neutral")
     nickname = st.session_state.get("nickname", "Anonymous")
     now = time.time()
 
-    # Clean old entries
+    # 🧹 Clean old waiting entries (>30s)
     candidates = db.reference("/waiting_list").get()
     for uid, info in (candidates or {}).items():
         if time.time() - info.get("timestamp", 0) > 30:
             db.reference("/waiting_list").child(uid).delete()
 
-    # Add to waiting list
+    # ✅ Add to waiting_list if not already present
     if not db.reference("/waiting_list").child(user_id).get():
         db.reference("/waiting_list").child(user_id).set({
             "emotion": emotion,
@@ -108,13 +109,12 @@ elif st.session_state["page"] == "chat_match":
             "status": "matching"
         })
 
-    # Try to match with others
+    # 🚀 Try to find a match (active role)
     candidates = db.reference("/waiting_list").get()
     for uid, info in (candidates or {}).items():
         if uid != user_id and info.get("emotion") == emotion and info.get("is_online") and time.time() - info.get("timestamp", 0) < 30:
             room_id = "_".join(sorted([user_id, uid]))
 
-            # Create room if not exists
             room_ref = db.reference("/chat_rooms").child(room_id)
             if not room_ref.get():
                 room_ref.set({
@@ -122,17 +122,31 @@ elif st.session_state["page"] == "chat_match":
                     "timestamp": now
                 })
 
-            # Remove both from waiting list
+            # Remove both from waiting_list
             db.reference("/waiting_list").child(user_id).delete()
             db.reference("/waiting_list").child(uid).delete()
 
-            # Save session and go to chat
+            # Redirect to chat room
             st.session_state["partner_id"] = uid
             st.session_state["partner_name"] = info.get("name", "Stranger")
             st.session_state["chat_mode"] = "1-1"
             st.session_state["page"] = "chat_room"
             st.rerun()
 
+    # 👀 Passive role: check if someone already matched me and created room
+    room_candidates = db.reference("/chat_rooms").get() or {}
+    for room_id, room_data in room_candidates.items():
+        members = room_data.get("members", [])
+        if user_id in members:
+            other_id = next((uid for uid in members if uid != user_id), None)
+            if other_id:
+                st.session_state["partner_id"] = other_id
+                st.session_state["partner_name"] = "Stranger"
+                st.session_state["chat_mode"] = "1-1"
+                st.session_state["page"] = "chat_room"
+                st.rerun()
+
+    # Waiting display
     st.info("⏳ Looking for someone to chat with...")
 
     if st.button("🛑 Stop Matching and Go Back"):
@@ -142,6 +156,7 @@ elif st.session_state["page"] == "chat_match":
 
     time.sleep(5)
     st.rerun()
+
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
