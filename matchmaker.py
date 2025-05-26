@@ -1,11 +1,13 @@
 import time
 from firebase_admin import db
+import atexit
 
 class MatchMaker:
     def __init__(self):
         self.waiting_list_ref = db.reference("/waiting_list")
 
     def find_match(self, emotion, user_id, name="Anonymous"):
+        self.cleanup_waitlist()  # 🧹 Dọn những user đã quá 30s không ping
         candidates = self.waiting_list_ref.get()
         print(f"[MatchMaker] Current waiting list: {candidates}")
 
@@ -53,3 +55,9 @@ class MatchMaker:
             if not online or now - ts > 30:
                 print(f"[CLEANUP] Removing {uid} from waitlist (offline/timeout)")
                 self.waiting_list_ref.child(uid).delete()
+
+    def cleanup_on_exit(user_id):
+        db.reference("/waiting_list").child(user_id).delete()
+    
+    atexit.register(cleanup_on_exit, user_id)
+
