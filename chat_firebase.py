@@ -4,6 +4,7 @@ from firebase_admin import credentials, db
 from datetime import datetime
 import uuid
 import os
+import streamlit as st
 
 class ChatFirebase:
     def __init__(self):
