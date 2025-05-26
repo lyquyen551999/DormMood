@@ -191,11 +191,15 @@ elif st.session_state["page"] == "chat_room":
 
     # ➕ Nút thoát khỏi phòng chat
     if st.button("🚪 Leave Chat Room"):
-        st.session_state.pop("partner_id", None)
-        st.session_state.pop("partner_name", None)
-        st.session_state.pop("chat_mode", None)
-        st.session_state["page"] = "mood_journal"
-        st.rerun()
+    # ✅ Xoá phòng chat nếu là 1-1
+    if mode == "1-1" and partner_id:
+        db.reference("/chat_rooms").child(room_id).delete()
+    st.session_state.pop("partner_id", None)
+    st.session_state.pop("partner_name", None)
+    st.session_state.pop("chat_mode", None)
+    st.session_state["page"] = "mood_journal"
+    st.rerun()
+
 
     time.sleep(5)
     st.rerun()
