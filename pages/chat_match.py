@@ -32,12 +32,12 @@ if match_result["success"]:
 
 # Nếu chưa match được
 else:
-    st.warning("😢 No suitable match found at the moment. Retrying...")
-
-    # Hiển thị trạng thái và delay trước khi thử lại
-    st.info("🔄 Retrying match in a few seconds...")
+    placeholder = st.empty()
+    placeholder.info("🔄 Retrying match in 5 seconds...")
     time.sleep(5)
+    placeholder.info("🔁 Re-attempting match now...")
     st.experimental_rerun()
+
 
 # 💓 Heartbeat giữ người dùng online
 def heartbeat(user_id):
