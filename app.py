@@ -6,6 +6,7 @@ import threading
 from firebase_admin import db
 from matchmaker import MatchMaker
 from chat_firebase import ChatFirebase
+from datetime import datetime
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -45,6 +46,7 @@ if st.session_state["page"] == "login":
             st.session_state["nickname"] = "Stranger"
             st.session_state["page"] = "mood_journal"
             st.rerun()
+
 
     with tabs[2]:
         new_email = st.text_input("Email", key="register_email")
@@ -98,10 +100,6 @@ elif st.session_state["page"] == "chat_match":
 
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
     st.write("🔍 Searching for someone to talk to...")
-    if st.button("🛑 Stop Matching and Go Back"):
-        db.reference("/waiting_list").child(user_id).delete()
-        st.session_state["page"] = "mood_journal"
-        st.rerun()
 
     # ✅ Kiểm tra nếu user đã bị người khác match (trong /chat_rooms)
     room_candidates = db.reference("/chat_rooms").get()
@@ -109,110 +107,25 @@ elif st.session_state["page"] == "chat_match":
         for room_id, room in room_candidates.items():
             members = room.get("members", [])
             if user_id in members and len(members) == 2:
-                confirmations = db.reference("/match_confirmations").child(room_id).get()
-                if confirmations:
-                    if user_id not in confirmations:
-                        partner_id = [uid for uid in members if uid != user_id][0]
-                        partner_name = "Stranger"
-                        agree = st.radio("✅ Your partner accepted the match. Do you also want to join the chat room?", ["Yes", "No"], index=None, horizontal=True)
-                        if agree == "No":
-                            db.reference("/waiting_list").child(user_id).delete()
-                            db.reference("/match_confirmations").child(room_id).delete()
-                            st.warning("You declined. Looking for a new match...")
-                            time.sleep(3)
-                            st.rerun()
-                        elif agree == "Yes":
-                            db.reference("/match_confirmations").child(room_id).update({user_id: True})
-                            st.session_state["partner_id"] = partner_id
-                            st.session_state["partner_name"] = partner_name
-                            st.session_state["chat_mode"] = "1-1"
-                            st.session_state["page"] = "chat_room"
-                            st.rerun()
-                    elif user_id in confirmations and all(uid in confirmations for uid in members):
-                        partner_id = [uid for uid in members if uid != user_id][0]
-                        st.session_state["partner_id"] = partner_id
-                        st.session_state["partner_name"] = "Stranger"
-                        st.session_state["chat_mode"] = "1-1"
-                        st.session_state["page"] = "chat_room"
-                        st.rerun()
+                partner_id = [uid for uid in members if uid != user_id][0]
+                st.session_state["partner_id"] = partner_id
+                st.session_state["partner_name"] = "Anonymous"
+                st.session_state["chat_mode"] = "1-1"
+                st.session_state["page"] = "chat_room"
+                st.rerun()
 
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
-
-    if "partner_id" in match_result:
-        st.session_state["pending_partner_id"] = match_result["partner_id"]
     
-
-    if match_result["success"] and "partner_id" not in st.session_state:
-        # Kiểm tra xem đối phương còn online
-        partner_id = match_result["partner_id"]
-        partner_online_ref = db.reference("/waiting_list").child(partner_id).get()
-        if not partner_online_ref:
-            st.warning("❌ The other user is no longer online. Looking for a new match...")
-            db.reference("/waiting_list").child(user_id).delete()
-            time.sleep(3)
-            st.rerun()
-
-        # Hiển thị lựa chọn xác nhận match
-        user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
-
-        if user_decision is None:
-            st.warning("Please make a selection to continue...")
-            st.stop()
-
-        if user_decision == "No":
-            st.info("⏳ You declined the match. Waiting for a new one...")
-            db.reference("/waiting_list").child(user_id).delete()
-            time.sleep(3)
-            st.rerun()
-
-        # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
-        confirmation_ref = db.reference("/match_confirmations")
-        room_id = "_".join(sorted([user_id, partner_id]))
-        confirmation_ref.child(room_id).update({ user_id: True })
-
-        confirmations = confirmation_ref.child(room_id).get()
-        if confirmations and partner_id in confirmations:
-            st.success(f"🎉 Both accepted! Matched with: {match_result['partner_name']} (ID: {partner_id})")
-            st.session_state["partner_id"] = partner_id
-            st.session_state["partner_name"] = match_result["partner_name"]
-            st.session_state["chat_mode"] = "1-1"
-            db.reference("/waiting_list").child(user_id).delete()
-            db.reference("/waiting_list").child(partner_id).delete()
-            db.reference("/chat_rooms").child(room_id).set({"members": [user_id, partner_id], "timestamp": time.time()})
-            confirmation_ref.child(room_id).delete()
-            st.session_state["page"] = "chat_room"
-            st.rerun()
-        else:
-            st.info("✅ Waiting for the other user to confirm...")
-            time.sleep(5)
-            st.rerun()
-
-        # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
-        confirmation_ref = db.reference("/match_confirmations")
-        partner_id = match_result["partner_id"]
-        room_id = "_".join(sorted([user_id, partner_id]))
-        confirmation_ref.child(room_id).update({ user_id: True })
-
-        confirmations = confirmation_ref.child(room_id).get()
-        if confirmations and partner_id in confirmations:
-            st.success(f"🎉 Both accepted! Matched with: {match_result['partner_name']} (ID: {partner_id})")
-            st.session_state["partner_id"] = partner_id
-            st.session_state["partner_name"] = match_result["partner_name"]
-            st.session_state["chat_mode"] = "1-1"
-            db.reference("/waiting_list").child(user_id).delete()
-            db.reference("/waiting_list").child(partner_id).delete()
-            db.reference("/chat_rooms").child(room_id).set({"members": [user_id, partner_id], "timestamp": time.time()})
-            confirmation_ref.child(room_id).delete()
-            st.session_state["page"] = "chat_room"
-            st.rerun()
-        else:
-            st.info("✅ Waiting for the other user to confirm...")
-            time.sleep(5)
-            st.rerun()
-
-        
-    elif not match_result["success"] and "partner_id" not in st.session_state and not room_candidates and "pending_partner_id" not in st.session_state:
+    if match_result["success"]:
+        db.reference("/waiting_list").child(user_id).delete()  # ✅ Xóa khỏi waitlist khi đã được match
+        st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
+        st.session_state["partner_id"] = match_result["partner_id"]
+        st.session_state["partner_name"] = match_result["partner_name"]
+        st.session_state["chat_mode"] = "1-1"
+        st.session_state["page"] = "chat_room"
+        st.rerun()
+    else:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
 
@@ -274,18 +187,26 @@ elif st.session_state["page"] == "chat_room":
         for msg in messages[-50:]:
             sender = msg.get("display_name", "Unknown")
             content = msg.get("text", "")
-            timestamp = msg.get("timestamp", "")
-            st.markdown(f"**{sender}** ({timestamp}): {content}")
+            raw_ts = msg.get("timestamp", "")
+            try:
+                formatted_ts = datetime.fromisoformat(raw_ts).strftime("%Y/%m/%d %H:%M")
+            except:
+                formatted_ts = raw_ts  # fallback nếu lỗi định dạng
+            st.markdown(f"**{sender}** ({formatted_ts}): {content}")
     else:
         st.info("No messages yet.")
 
     # ➕ Nút thoát khỏi phòng chat
     if st.button("🚪 Leave Chat Room"):
+        # ✅ Xoá phòng chat nếu là 1-1
+        if mode == "1-1" and partner_id:
+            db.reference("/chat_rooms").child(room_id).delete()
         st.session_state.pop("partner_id", None)
         st.session_state.pop("partner_name", None)
         st.session_state.pop("chat_mode", None)
         st.session_state["page"] = "mood_journal"
         st.rerun()
+
 
     time.sleep(5)
     st.rerun()
