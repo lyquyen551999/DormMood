@@ -8,10 +8,12 @@ import os
 class ChatFirebase:
     def __init__(self):
         if not firebase_admin._apps:
-            cred_path = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
-            cred = credentials.Certificate(cred_path)
+            cred = credentials.Certificate({
+                "type": st.secrets["firebase"]["type"],
+                ...
+            })
             firebase_admin.initialize_app(cred, {
-                'databaseURL': 'https://dormmood-default-rtdb.asia-southeast1.firebasedatabase.app'
+                'databaseURL': st.secrets["firebase"]["databaseURL"]
             })
 
     def send_message(self, room_id, sender_id, display_name, text):
