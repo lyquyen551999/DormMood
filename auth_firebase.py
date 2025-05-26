@@ -31,7 +31,7 @@ def firebase_register(email, password):
 
 def firebase_login(email, password):
     import requests
-    api_key = st.secrets["firebase"].get("api_key") or "AIzaSyDFd8ctdKlwpHERA3xd38YJrQSd4VNDGWA"
+    api_key = st.secrets["firebase"].get("api_key") or "AIzaSyATbz58jD0cuEMY8RS_0TSumY1-kDLgu6c"
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
     payload = {
         "email": email,
