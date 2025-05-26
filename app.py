@@ -138,8 +138,6 @@ elif st.session_state["page"] == "chat_match":
                 st.rerun()
             else:
                 st.info("Waiting for your partner to confirm...")
-                time.sleep(5)
-                st.rerun()
         elif decision == "No":
             st.info("You declined the match. Looking for someone else...")
             st.session_state.pop("potential_match")
@@ -150,9 +148,6 @@ elif st.session_state["page"] == "chat_match":
         db.reference("/waiting_list").child(user_id).delete()
         st.session_state["page"] = "mood_journal"
         st.rerun()
-
-    time.sleep(5)
-    st.rerun()
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
