@@ -1,4 +1,3 @@
-
 import streamlit as st
 from matchmaker import MatchMaker
 import threading
@@ -11,18 +10,24 @@ st.title("💬 Chat Matching")
 
 user_id = st.session_state.get("user_token", "anonymous")
 emotion = st.session_state.get("latest_emotion", "neutral")
+nickname = st.session_state.get("nickname", "Anonymous")
 
 st.markdown(f"🧠 Your current emotion: **{emotion}**")
 st.write("🔍 Searching for someone to talk to...")
 
-# Tạo matchmaker và tìm người phù hợp
 matcher = MatchMaker()
-nickname = st.session_state.get("nickname", "Anonymous")
-match_result = matcher.find_match(emotion, user_id)
+match_result = matcher.find_match(emotion, user_id, name=nickname)
 
 if match_result["success"]:
     st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
-    st.markdown("✅ You can now enter the chat room.")
+    
+    # 💡 Lưu lại partner để vào chat_room
+    st.session_state["partner_id"] = match_result["partner_id"]
+    st.session_state["partner_name"] = match_result["partner_name"]
+    st.session_state["chat_mode"] = "1-1"
+    st.session_state["page"] = "chat_room"
+    st.experimental_rerun()
+
 else:
     st.error("😢 No suitable match found at the moment. Please try again later.")
 
@@ -34,9 +39,8 @@ def heartbeat(user_id):
                 "is_online": True,
                 "timestamp": time.time()
             })
-            time.sleep(10)  # Cập nhật mỗi 10 giây
+            time.sleep(10)
         except:
-            break  # Stop nếu bị lỗi hoặc thoát app
+            break
 
-# Gọi sau khi user nhấn 我要傾訴
 threading.Thread(target=heartbeat, args=(user_id,), daemon=True).start()
