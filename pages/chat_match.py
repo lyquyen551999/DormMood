@@ -38,8 +38,8 @@ else:
             st.info(f"🔄 Retrying match in **{i}** second(s)...")
             time.sleep(1)
 
-# Sau countdown, rerun
-st.experimental_rerun()
+    # Sau countdown, rerun
+    st.experimental_rerun()
 
 # 💓 Heartbeat giữ online
 def heartbeat(user_id):
