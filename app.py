@@ -195,6 +195,15 @@ elif st.session_state["page"] == "chat_match":
     time.sleep(5)
     st.rerun()
 
+    current_confirmations = confirmation_ref.get() or {}
+    st.write("🧪 DEBUG:", {
+        "room_id": match["room_id"],
+        "user_id": user_id,
+        "partner_id": match["partner_id"],
+        "confirmations": current_confirmations
+    })
+
+
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
