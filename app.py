@@ -38,7 +38,7 @@ if st.session_state["page"] == "login":
                 st.rerun()
             else:
                 st.error("Login failed")
-    with tabs[2]:
+    with tabs[1]:
             new_email = st.text_input("Email", key="register_email")
             new_password = st.text_input("Password", type="password", key="register_password")
             if st.button("Register"):
