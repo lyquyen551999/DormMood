@@ -18,30 +18,28 @@ st.write("🔍 Searching for someone to talk to...")
 # Khởi tạo MatchMaker
 matcher = MatchMaker()
 
-# Match thử
+# Gọi tìm match
 match_result = matcher.find_match(emotion, user_id, name=nickname)
 st.write("✅ Match result:", match_result)
 
+# Nếu tìm được người match
 if match_result["success"]:
     st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
     st.session_state["partner_id"] = match_result["partner_id"]
     st.session_state["partner_name"] = match_result["partner_name"]
     st.session_state["chat_mode"] = "1-1"
-    switch_page("chat_room")  # Tự động sang chat room
+    switch_page("chat_room")
+
+# Nếu chưa match được
 else:
-    st.warning("😢 No suitable match found at the moment. Trying again...")
+    st.warning("😢 No suitable match found at the moment. Retrying...")
 
-    # Countdown timer
-    countdown = 5
-    with st.empty():
-        for i in range(countdown, 0, -1):
-            st.info(f"🔄 Retrying match in **{i}** second(s)...")
-            time.sleep(1)
-
-    # Sau countdown, rerun
+    # Hiển thị trạng thái và delay trước khi thử lại
+    st.info("🔄 Retrying match in a few seconds...")
+    time.sleep(5)
     st.experimental_rerun()
 
-# 💓 Heartbeat giữ online
+# 💓 Heartbeat giữ người dùng online
 def heartbeat(user_id):
     ref = db.reference("/waiting_list").child(user_id)
     while True:
