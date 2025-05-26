@@ -184,8 +184,12 @@ elif st.session_state["page"] == "chat_room":
         for msg in messages[-50:]:
             sender = msg.get("display_name", "Unknown")
             content = msg.get("text", "")
-            timestamp = msg.get("timestamp", "")
-            st.markdown(f"**{sender}** ({timestamp}): {content}")
+            raw_ts = msg.get("timestamp", "")
+            try:
+                formatted_ts = datetime.fromisoformat(raw_ts).strftime("%Y/%m/%d %H:%M")
+            except:
+                formatted_ts = raw_ts  # fallback nếu lỗi định dạng
+            st.markdown(f"**{sender}** ({formatted_ts}): {content}")
     else:
         st.info("No messages yet.")
 
