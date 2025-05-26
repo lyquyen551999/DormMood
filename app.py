@@ -138,6 +138,8 @@ elif st.session_state["page"] == "chat_match":
                 st.rerun()
             else:
                 st.info("Waiting for your partner to confirm...")
+                time.sleep(5)
+                st.rerun()
         elif decision == "No":
             st.info("You declined the match. Looking for someone else...")
             st.session_state.pop("potential_match")
