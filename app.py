@@ -113,8 +113,7 @@ elif st.session_state["page"] == "chat_match":
 
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
-    st.write("✅ Match result:", match_result)
-
+    
     if match_result["success"]:
         db.reference("/waiting_list").child(user_id).delete()  # ✅ Xóa khỏi waitlist khi đã được match
         st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
