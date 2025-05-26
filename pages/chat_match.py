@@ -29,15 +29,17 @@ if match_result["success"]:
     st.session_state["chat_mode"] = "1-1"
     switch_page("chat_room")  # Tự động sang chat room
 else:
-    st.info("⏳ No match yet... retrying in 5 seconds")
+    st.warning("😢 No suitable match found at the moment. Trying again...")
 
-    # Chỉ rerun mỗi 5 giây 1 lần (để tránh vòng lặp vô tận)
-    now = time.time()
-    last_attempt = st.session_state.get("last_match_attempt", 0)
-    if now - last_attempt > 5:
-        st.session_state["last_match_attempt"] = now
-        time.sleep(5)
-        st.experimental_rerun()
+    # Countdown timer
+    countdown = 5
+    with st.empty():
+        for i in range(countdown, 0, -1):
+            st.info(f"🔄 Retrying match in **{i}** second(s)...")
+            time.sleep(1)
+
+# Sau countdown, rerun
+st.experimental_rerun()
 
 # 💓 Heartbeat giữ online
 def heartbeat(user_id):
