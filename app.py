@@ -98,9 +98,8 @@ elif st.session_state["page"] == "chat_match":
         if time.time() - info.get("timestamp", 0) > 30:
             db.reference("/waiting_list").child(uid).delete()
 
-    # Add to waiting list only if not already in and only once per session
-    existing = db.reference("/waiting_list").child(user_id).get()
-    if not existing and "matching_initialized" not in st.session_state:
+    # Add to waiting list only if not already in and not already matched
+    if not db.reference("/waiting_list").child(user_id).get() and "matching_initialized" not in st.session_state:
         st.session_state["matching_initialized"] = True
         db.reference("/waiting_list").child(user_id).set({
             "emotion": emotion,
@@ -110,7 +109,7 @@ elif st.session_state["page"] == "chat_match":
             "status": "matching"
         })
 
-    # Match candidate filtering
+    # Match candidate (tôi là người chủ động)
     candidates = db.reference("/waiting_list").get()
     for uid, info in (candidates or {}).items():
         if uid != user_id and info.get("emotion") == emotion and info.get("is_online") and now - info.get("timestamp", now) < 30:
@@ -123,23 +122,23 @@ elif st.session_state["page"] == "chat_match":
                     "partner_name": info.get("name", "Stranger")
                 }
                 break
-                
-            # Nếu có ai đó đã match với mình trước (mình bị “bị động”)
+
+    # Nếu tôi là người bị match (bị mời)
+    if "potential_match" not in st.session_state:
         confirmations = db.reference("/match_confirmations").get() or {}
-        for room_id, room_data in confirmations.items():
-            if user_id in room_data:
-                other_id = [uid for uid in room_data.keys() if uid != user_id]
-                if other_id:
-                    partner_id = other_id[0]
+        for room_id, confirms in confirmations.items():
+            if user_id in confirms and confirms[user_id] != True:
+                partner_id = next((uid for uid in confirms if uid != user_id), None)
+                if partner_id:
+                    partner_info = db.reference("/waiting_list").child(partner_id).get()
                     st.session_state["potential_match"] = {
                         "partner_id": partner_id,
                         "room_id": room_id,
-                        "partner_name": db.reference("/waiting_list").child(partner_id).get().get("name", "Stranger")
+                        "partner_name": partner_info.get("name", "Stranger") if partner_info else "Stranger"
                     }
                     break
 
-
-    # Matching confirmation logic
+    # Matching confirmation
     if "potential_match" in st.session_state:
         match = st.session_state["potential_match"]
         confirmation_ref = db.reference("/match_confirmations").child(match["room_id"])
@@ -152,7 +151,6 @@ elif st.session_state["page"] == "chat_match":
             )
             if decision == "Yes":
                 confirmation_ref.update({user_id: True})
-                st.session_state["confirmed"] = True
                 st.info("✅ Waiting for your partner to confirm...")
                 time.sleep(3)
                 st.rerun()
@@ -162,31 +160,31 @@ elif st.session_state["page"] == "chat_match":
                 confirmation_ref.delete()
                 time.sleep(2)
                 st.rerun()
-                
+
+        # Nếu cả hai đã xác nhận
         current_confirmations = confirmation_ref.get() or {}
-        # ✅ Nếu cả hai đã xác nhận, vào phòng
         if current_confirmations.get(user_id) == True and current_confirmations.get(match["partner_id"]) == True:
-            # Kiểm tra nếu phòng chưa tạo thì bên nào tạo cũng được
             room_ref = db.reference("/chat_rooms").child(match["room_id"])
             if not room_ref.get():
                 room_ref.set({
                     "members": [user_id, match["partner_id"]],
                     "timestamp": now
                 })
-        
+
+            db.reference("/waiting_list").child(user_id).delete()
+            db.reference("/waiting_list").child(match["partner_id"]).delete()
+            db.reference("/match_confirmations").child(match["room_id"]).delete()
+
             st.session_state["partner_id"] = match["partner_id"]
             st.session_state["partner_name"] = match["partner_name"]
             st.session_state["chat_mode"] = "1-1"
             st.session_state["page"] = "chat_room"
             st.session_state.pop("potential_match", None)
-            db.reference("/waiting_list").child(user_id).delete()
-            db.reference("/waiting_list").child(match["partner_id"]).delete()
-            db.reference("/match_confirmations").child(match["room_id"]).delete()
             st.rerun()
-
         elif current_confirmations.get(user_id) == True:
-            st.info("Waiting for your partner to confirm...")
+            st.info("⏳ Waiting for your partner to confirm...")
 
+    # Nút huỷ
     if st.button("🛑 Stop Matching and Go Back"):
         db.reference("/waiting_list").child(user_id).delete()
         st.session_state.pop("matching_initialized", None)
@@ -196,6 +194,7 @@ elif st.session_state["page"] == "chat_match":
 
     time.sleep(5)
     st.rerun()
+
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
