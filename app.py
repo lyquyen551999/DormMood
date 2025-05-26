@@ -105,15 +105,32 @@ elif st.session_state["page"] == "chat_match":
         for room_id, room in room_candidates.items():
             members = room.get("members", [])
             if user_id in members and len(members) == 2:
-                confirmation_ref = db.reference("/match_confirmations").child(room_id).get()
-                if not confirmation_ref or user_id not in confirmation_ref:
-                    continue  # Chưa xác nhận, chờ xác nhận trước
-                partner_id = [uid for uid in members if uid != user_id][0]
-                st.session_state["partner_id"] = partner_id
-                st.session_state["partner_name"] = "Anonymous"
-                st.session_state["chat_mode"] = "1-1"
-                st.session_state["page"] = "chat_room"
-                st.rerun()
+                confirmations = db.reference("/match_confirmations").child(room_id).get()
+                if confirmations:
+                    if user_id not in confirmations:
+                        partner_id = [uid for uid in members if uid != user_id][0]
+                        partner_name = "Stranger"
+                        agree = st.radio("✅ Your partner accepted the match. Do you also want to join the chat room?", ["Yes", "No"], index=None, horizontal=True)
+                        if agree == "No":
+                            db.reference("/waiting_list").child(user_id).delete()
+                            db.reference("/match_confirmations").child(room_id).delete()
+                            st.warning("You declined. Looking for a new match...")
+                            time.sleep(3)
+                            st.rerun()
+                        elif agree == "Yes":
+                            db.reference("/match_confirmations").child(room_id).update({user_id: True})
+                            st.session_state["partner_id"] = partner_id
+                            st.session_state["partner_name"] = partner_name
+                            st.session_state["chat_mode"] = "1-1"
+                            st.session_state["page"] = "chat_room"
+                            st.rerun()
+                    elif user_id in confirmations:
+                        partner_id = [uid for uid in members if uid != user_id][0]
+                        st.session_state["partner_id"] = partner_id
+                        st.session_state["partner_name"] = "Stranger"
+                        st.session_state["chat_mode"] = "1-1"
+                        st.session_state["page"] = "chat_room"
+                        st.rerun()
 
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
@@ -133,7 +150,7 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(3)
             st.rerun()
 
-        if user_decision == "No":
+                if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
             st.rerun()
