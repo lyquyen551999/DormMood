@@ -1,7 +1,7 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
 import uuid
-import auth_firebase  
+from matchmaker import MatchMaker
 
 
 # Cấu hình layout và ẩn sidebar
@@ -91,7 +91,7 @@ elif st.session_state["page"] == "mood_journal":
 
 # CHAT MATCHING PAGE
 elif st.session_state["page"] == "chat_match":
-    from matchmaker import MatchMaker
+    
     st.title("💬 Chat Matching")
 
     emotion = st.session_state.get("latest_emotion", "neutral")
@@ -100,7 +100,9 @@ elif st.session_state["page"] == "chat_match":
     st.write("🔍 Searching for someone to talk to...")
 
     matcher = MatchMaker()
-    match_result = matcher.find_match(emotion, user_id)
+    nickname = st.session_state.get("nickname", "Anonymous")
+    match_result = matcher.find_match(emotion, user_id, name=nickname)
+    st.write("✅ Match result:", match_result)
 
     if match_result["success"]:
         st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
