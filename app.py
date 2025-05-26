@@ -125,7 +125,7 @@ elif st.session_state["page"] == "chat_match":
                             st.session_state["page"] = "chat_room"
                             st.rerun()
                     elif user_id in confirmations and all(uid in confirmations for uid in members):
-                        partner_id = [uid for uid in members if uid != user_id][0]
+                partner_id = [uid for uid in members if uid != user_id][0]
                         st.session_state["partner_id"] = partner_id
                         st.session_state["partner_name"] = "Stranger"
                         st.session_state["chat_mode"] = "1-1"
@@ -179,7 +179,7 @@ elif st.session_state["page"] == "chat_match":
             st.rerun()
 
         
-    elif not match_result["success"] and "partner_id" not in st.session_state:
+    elif not match_result["success"] and "partner_id" not in st.session_state and not room_candidates:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
 
