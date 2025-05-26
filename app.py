@@ -25,7 +25,7 @@ if "page" not in st.session_state:
 if st.session_state["page"] == "login":
     st.title("🔐 DormMood Login Interface")
     st.write("Please choose a login method:")
-    tabs = st.tabs(["Regular Login", "Anonymous Login", "Register"])
+    tabs = st.tabs(["Regular Login", "Register"])
 
     with tabs[0]:
         email = st.text_input("Email", key="login_email")
@@ -39,14 +39,7 @@ if st.session_state["page"] == "login":
             else:
                 st.error("Login failed")
 
-    with tabs[1]:
-        if st.button("Continue as Anonymous"):
-            anon_id = f"anon-{uuid.uuid4()}"
-            st.session_state["user_token"] = anon_id
-            st.session_state["nickname"] = "Stranger"
-            st.session_state["page"] = "mood_journal"
-            st.rerun()
-
+    
     with tabs[2]:
         new_email = st.text_input("Email", key="register_email")
         new_password = st.text_input("Password", type="password", key="register_password")
