@@ -83,6 +83,7 @@ elif st.session_state["page"] == "mood_journal":
         st.rerun()
 
     if st.button("Log out"):
+        db.reference("/waiting_list").child(st.session_state["user_token"]).delete()  # ❌ Xóa khỏi waitlist nếu có
         st.session_state.clear()
         st.rerun()
 
@@ -114,6 +115,7 @@ elif st.session_state["page"] == "chat_match":
     st.write("✅ Match result:", match_result)
 
     if match_result["success"]:
+        db.reference("/waiting_list").child(user_id).delete()  # ✅ Xóa khỏi waitlist khi đã được match
         st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
         st.session_state["partner_id"] = match_result["partner_id"]
         st.session_state["partner_name"] = match_result["partner_name"]
