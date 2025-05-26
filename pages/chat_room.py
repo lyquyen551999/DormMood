@@ -13,23 +13,19 @@ chat_db = ChatFirebase()
 
 # Lấy user_id và chọn nickname tạm thời
 user_id = st.session_state.get("user_token", "anonymous")
-if "nickname" not in st.session_state:
-    st.session_state["nickname"] = f"User-{user_id[-5:]}"
-nickname = st.text_input("Your nickname (you can change):", st.session_state["nickname"])
-st.session_state["nickname"] = nickname
+nickname = st.session_state.get("nickname", f"User-{user_id[-5:]}")
 
-# Chọn chế độ 1-1 hoặc nhóm
-mode = st.radio("Chat mode", ["1-1", "Group"])
-partner_id = None
+# Nếu là redirect từ match
+partner_id = st.session_state.get("partner_id")
+mode = st.session_state.get("chat_mode", "1-1")
 is_group = False
 
-if mode == "1-1":
-    partner_id = st.text_input("Enter partner ID:")
-    if partner_id:
-        room_id = "_".join(sorted([user_id, partner_id]))
+if mode == "1-1" and partner_id:
+    room_id = "_".join(sorted([user_id, partner_id]))
 else:
     room_id = "group_room"
     is_group = True
+
 
 # Tạo phòng nếu chưa có
 if not chat_db.room_exists(room_id):
