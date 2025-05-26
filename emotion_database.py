@@ -2,12 +2,18 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
 import os
+import streamlit as st
 
 class EmotionDatabase:
     def __init__(self):
         if not firebase_admin._apps:
-            cred = credentials.Certificate("serviceAccountKey.json")  # đường dẫn file bạn vừa tải
-            firebase_admin.initialize_app(cred)
+            cred = credentials.Certificate({
+                "type": st.secrets["firebase"]["type"],
+                ...
+            })
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': st.secrets["firebase"]["databaseURL"]
+            })
         self.db = firestore.client()
 
     def save_mood(self, user_id, mood, note):
