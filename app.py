@@ -112,6 +112,7 @@ elif st.session_state["page"] == "chat_match":
         st.info("🔄 Retrying match in 5 seconds...")
 
         if st.button("🛑 Stop Matching and Go Back"):
+            db.reference("/waiting_list").child(user_id).delete()  # ❗ Remove from waitlist when user cancels
             st.session_state["page"] = "mood_journal"
             st.rerun()
 
