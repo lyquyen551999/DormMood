@@ -126,7 +126,7 @@ elif st.session_state["page"] == "chat_match":
         if decision == "Yes":
             db.reference("/match_confirmations").child(match["room_id"]).update({user_id: True})
             confirmations = db.reference("/match_confirmations").child(match["room_id"]).get()
-            if match["partner_id"] in confirmations:
+            if confirmations.get(match["partner_id"]) == True and confirmations.get(user_id) == True:
                 db.reference("/waiting_list").child(user_id).delete()
                 db.reference("/waiting_list").child(match["partner_id"]).delete()
                 db.reference("/chat_rooms").child(match["room_id"]).set({"members": [user_id, match["partner_id"]], "timestamp": time.time()})
