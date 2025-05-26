@@ -119,37 +119,46 @@ elif st.session_state["page"] == "chat_match":
     if match_result["success"]:
         # Hiển thị lựa chọn xác nhận match
         user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
-        
+
+        if user_decision is None:
+            st.warning("Please make a selection to continue...")
+            st.stop()
+
+        if user_decision == "No":
+            st.info("⏳ You declined the match. Waiting for a new one...")
+            db.reference("/waiting_list").child(user_id).delete()
+            time.sleep(3)
+            st.rerun()
+
+        if user_decision == "Yes":
+        user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
         if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
             st.rerun()
-        
-        elif user_decision == "Yes":
-            # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
-            confirmation_ref = db.reference("/match_confirmations")
-            partner_id = match_result["partner_id"]
-            room_id = "_".join(sorted([user_id, partner_id]))
-            confirmation_ref.child(room_id).update({ user_id: True })
-        
-            confirmations = confirmation_ref.child(room_id).get()
-            if confirmations and partner_id in confirmations:
-                st.success(f"🎉 Both accepted! Matched with: {match_result['partner_name']} (ID: {partner_id})")
-                st.session_state["partner_id"] = partner_id
-                st.session_state["partner_name"] = match_result["partner_name"]
-                st.session_state["chat_mode"] = "1-1"
-                db.reference("/waiting_list").child(user_id).delete()
-                db.reference("/waiting_list").child(partner_id).delete()
-                db.reference("/chat_rooms").child(room_id).set({"members": [user_id, partner_id], "timestamp": time.time()})
-                confirmation_ref.child(room_id).delete()
-                st.session_state["page"] = "chat_room"
-                st.rerun()
-            else:
-                st.info("✅ Waiting for the other user to confirm...")
-                time.sleep(5)
-                st.rerun()
 
+        # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
+        confirmation_ref = db.reference("/match_confirmations")
+        partner_id = match_result["partner_id"]
+        room_id = "_".join(sorted([user_id, partner_id]))
+        confirmation_ref.child(room_id).update({ user_id: True })
 
+        confirmations = confirmation_ref.child(room_id).get()
+        if confirmations and partner_id in confirmations:
+            st.success(f"🎉 Both accepted! Matched with: {match_result['partner_name']} (ID: {partner_id})")
+            st.session_state["partner_id"] = partner_id
+            st.session_state["partner_name"] = match_result["partner_name"]
+            st.session_state["chat_mode"] = "1-1"
+            db.reference("/waiting_list").child(user_id).delete()
+            db.reference("/waiting_list").child(partner_id).delete()
+            db.reference("/chat_rooms").child(room_id).set({"members": [user_id, partner_id], "timestamp": time.time()})
+            confirmation_ref.child(room_id).delete()
+            st.session_state["page"] = "chat_room"
+            st.rerun()
+        else:
+            st.info("✅ Waiting for the other user to confirm...")
+            time.sleep(5)
+            st.rerun()
 
         
     else:
