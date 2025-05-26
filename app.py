@@ -1,12 +1,15 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
 import uuid
-# Nếu không chia file riêng, thì viết từng phần trực tiếp (xem ví dụ dưới)
+import time
+import threading
+from firebase_admin import db
+from matchmaker import MatchMaker
+from chat_firebase import ChatFirebase
 
-# Cấu hình
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
-# Ẩn sidebar
+# Hide sidebar
 st.markdown("""
     <style>
         [data-testid="stSidebar"] { display: none; }
@@ -14,15 +17,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Khởi tạo trạng thái trang
 if "page" not in st.session_state:
     st.session_state["page"] = "login"
 
-# ========== LOGIN PAGE ==========
+# ========== LOGIN ==========
 if st.session_state["page"] == "login":
     st.title("🔐 DormMood Login Interface")
     st.write("Please choose a login method:")
-    tabs = st.tabs(["🔐 Regular Login", "🕵️ Anonymous Login", "📝 Register"])
+    tabs = st.tabs(["Regular Login", "Anonymous Login", "Register"])
 
     with tabs[0]:
         email = st.text_input("Email", key="login_email")
@@ -34,7 +36,7 @@ if st.session_state["page"] == "login":
                 st.session_state["page"] = "mood_journal"
                 st.rerun()
             else:
-                st.error("❌ Login failed")
+                st.error("Login failed")
 
     with tabs[1]:
         if st.button("Continue as Anonymous"):
@@ -52,9 +54,9 @@ if st.session_state["page"] == "login":
                 st.session_state["page"] = "mood_journal"
                 st.rerun()
             else:
-                st.error("❌ Registration failed")
+                st.error("Registration failed")
 
-# ========== MOOD JOURNAL PAGE ==========
+# ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
     st.write(f"Welcome, user: `{st.session_state['user_token']}`")
@@ -84,21 +86,49 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state.clear()
         st.rerun()
 
-# ========== CHAT MATCHING PAGE ==========
+# ========== MATCHING ==========
 elif st.session_state["page"] == "chat_match":
-    import chat_match  # Gọi file riêng nếu bạn tách, hoặc dán nội dung trực tiếp vào đây
+    st.title("💬 Chat Matching")
+    user_id = st.session_state.get("user_token", "anonymous")
+    emotion = st.session_state.get("latest_emotion", "neutral")
+    nickname = st.session_state.get("nickname", "Anonymous")
+
+    st.markdown(f"🧠 Your current emotion: **{emotion}**")
+    st.write("🔍 Searching for someone to talk to...")
+
+    matcher = MatchMaker()
+    match_result = matcher.find_match(emotion, user_id, name=nickname)
+    st.write("✅ Match result:", match_result)
+
+    if match_result["success"]:
+        st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
+        st.session_state["partner_id"] = match_result["partner_id"]
+        st.session_state["partner_name"] = match_result["partner_name"]
+        st.session_state["chat_mode"] = "1-1"
+        st.session_state["page"] = "chat_room"
+        st.rerun()
+    else:
+        st.warning("😢 No suitable match found. Retrying...")
+        st.info("🔄 Retrying match in 5 seconds...")
+        time.sleep(5)
+        st.rerun()
+
+    def heartbeat(user_id):
+        ref = db.reference("/waiting_list").child(user_id)
+        while True:
+            try:
+                ref.update({"timestamp": time.time()})
+                time.sleep(10)
+            except:
+                break
+
+    threading.Thread(target=heartbeat, args=(user_id,), daemon=True).start()
 
 # ========== CHAT ROOM ==========
 elif st.session_state["page"] == "chat_room":
-    # ===== NỘI DUNG TỪ chat_room.py =====
-    import streamlit as st
-    from chat_firebase import ChatFirebase
-    import time
-
-    st.set_page_config(page_title="💬 Realtime Chat", page_icon="💬")
     st.title("💬 Realtime Chat Room")
-
     chat_db = ChatFirebase()
+
     user_id = st.session_state.get("user_token", "anonymous")
     if "nickname" not in st.session_state:
         st.session_state["nickname"] = f"User-{user_id[-5:]}"
@@ -140,4 +170,3 @@ elif st.session_state["page"] == "chat_room":
 
     time.sleep(5)
     st.rerun()
-
