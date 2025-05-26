@@ -117,14 +117,18 @@ elif st.session_state["page"] == "chat_match":
     st.write("✅ Match result:", match_result)
 
     if match_result["success"]:
+        # Hiển thị lựa chọn xác nhận match
+        user_decision = st.radio("🤝 Someone is available to chat with you. Do you want to connect?", ["Yes", "No"], horizontal=True)
+        if user_decision == "No":
+            st.info("⏳ Waiting for another match...")
+            time.sleep(5)
+            st.rerun()
+
         # Ghi tạm vào /match_confirmations để chờ đối phương đồng ý
         confirmation_ref = db.reference("/match_confirmations")
         partner_id = match_result["partner_id"]
         room_id = "_".join(sorted([user_id, partner_id]))
-
-        confirmation_ref.child(room_id).update({
-            user_id: True
-        })
+        confirmation_ref.child(room_id).update({ user_id: True })
 
         confirmations = confirmation_ref.child(room_id).get()
         if confirmations and partner_id in confirmations:
@@ -143,12 +147,7 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(5)
             st.rerun()
 
-        st.success(f"🎉 Matched with: {match_result['partner_name']} (ID: {match_result['partner_id']})")
-        st.session_state["partner_id"] = match_result["partner_id"]
-        st.session_state["partner_name"] = match_result["partner_name"]
-        st.session_state["chat_mode"] = "1-1"
-        st.session_state["page"] = "chat_room"
-        st.rerun()
+        
     else:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
