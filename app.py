@@ -98,6 +98,10 @@ elif st.session_state["page"] == "chat_match":
 
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
     st.write("🔍 Searching for someone to talk to...")
+    if st.button("🛑 Stop Matching and Go Back"):
+        db.reference("/waiting_list").child(user_id).delete()
+        st.session_state["page"] = "mood_journal"
+        st.rerun()
 
     # ✅ Kiểm tra nếu user đã bị người khác match (trong /chat_rooms)
     room_candidates = db.reference("/chat_rooms").get()
@@ -125,7 +129,7 @@ elif st.session_state["page"] == "chat_match":
                             st.session_state["page"] = "chat_room"
                             st.rerun()
                     elif user_id in confirmations and all(uid in confirmations for uid in members):
-                        partner_id = [uid for uid in members if uid != user_id][0]
+                    partner_id = [uid for uid in members if uid != user_id][0][uid for uid in members if uid != user_id][0]
                         st.session_state["partner_id"] = partner_id
                         st.session_state["partner_name"] = "Stranger"
                         st.session_state["chat_mode"] = "1-1"
