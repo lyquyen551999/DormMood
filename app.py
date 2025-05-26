@@ -107,6 +107,45 @@ elif st.session_state["page"] == "chat_match":
         "timestamp": time.time()
     })
 
+    # Step 2: try to find a match
+    candidates = db.reference("/waiting_list").get()
+    for uid, info in (candidates or {}).items():
+        if uid != user_id and info.get("emotion") == emotion:
+            partner_id = uid
+            room_id = "_".join(sorted([user_id, partner_id]))
+            st.session_state["potential_match"] = {
+                "partner_id": partner_id,
+                "room_id": room_id,
+                "partner_name": info.get("name", "Stranger")
+            }
+            break
+
+    if "potential_match" in st.session_state:
+        match = st.session_state["potential_match"]
+        decision = st.radio(f"🤝 {match['partner_name']} is available to chat. Do you want to connect?", ["Yes", "No"], index=None, horizontal=True)
+        if decision == "Yes":
+            db.reference("/match_confirmations").child(match["room_id"]).update({user_id: True})
+            confirmations = db.reference("/match_confirmations").child(match["room_id"]).get()
+            if match["partner_id"] in confirmations:
+                db.reference("/waiting_list").child(user_id).delete()
+                db.reference("/waiting_list").child(match["partner_id"]).delete()
+                db.reference("/chat_rooms").child(match["room_id"]).set({"members": [user_id, match["partner_id"]], "timestamp": time.time()})
+                st.session_state["partner_id"] = match["partner_id"]
+                st.session_state["partner_name"] = match["partner_name"]
+                st.session_state["chat_mode"] = "1-1"
+                st.session_state["page"] = "chat_room"
+                st.session_state.pop("potential_match")
+                st.rerun()
+            else:
+                st.info("Waiting for your partner to confirm...")
+                time.sleep(5)
+                st.rerun()
+        elif decision == "No":
+            st.info("You declined the match. Looking for someone else...")
+            st.session_state.pop("potential_match")
+            time.sleep(3)
+            st.rerun()
+
     if st.button("🛑 Stop Matching and Go Back"):
         db.reference("/waiting_list").child(user_id).delete()
         st.session_state["page"] = "mood_journal"
