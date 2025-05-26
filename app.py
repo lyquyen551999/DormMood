@@ -87,6 +87,7 @@ elif st.session_state["page"] == "mood_journal":
 
     if st.button("Log out"):
         db.reference("/waiting_list").child(st.session_state["user_token"]).delete()
+        st.session_state.pop("matching_initialized", None)
         db.reference("/match_confirmations").child(st.session_state["user_token"]).delete()
         st.session_state.clear()
         st.rerun()
@@ -105,14 +106,17 @@ elif st.session_state["page"] == "chat_match":
         if time.time() - info.get("timestamp", 0) > 30:
             db.reference("/waiting_list").child(uid).delete()
 
-    # Add user to waiting list with online status
-    db.reference("/waiting_list").child(user_id).set({
-        "emotion": emotion,
-        "name": nickname,
-        "timestamp": now,
-        "is_online": True,
-        "status": "matching"
-    })
+    # Add to waiting list only if not already in and only once per session
+    existing = db.reference("/waiting_list").child(user_id).get()
+    if not existing and "matching_initialized" not in st.session_state:
+        st.session_state["matching_initialized"] = True
+        db.reference("/waiting_list").child(user_id).set({
+            "emotion": emotion,
+            "name": nickname,
+            "timestamp": now,
+            "is_online": True,
+            "status": "matching"
+        })
 
     # Match candidate filtering
     candidates = db.reference("/waiting_list").get()
@@ -164,6 +168,7 @@ elif st.session_state["page"] == "chat_match":
 
     if st.button("🛑 Stop Matching and Go Back"):
         db.reference("/waiting_list").child(user_id).delete()
+        st.session_state.pop("matching_initialized", None)
         st.session_state.pop("potential_match", None)
         st.session_state["page"] = "mood_journal"
         st.rerun()
