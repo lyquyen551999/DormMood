@@ -38,19 +38,18 @@ if st.session_state["page"] == "login":
                 st.rerun()
             else:
                 st.error("Login failed")
-
-    
     with tabs[2]:
-        new_email = st.text_input("Email", key="register_email")
-        new_password = st.text_input("Password", type="password", key="register_password")
-        if st.button("Register"):
-            success, result = firebase_register(new_email, new_password)
-            if success:
-                st.session_state["user_token"] = result["localId"]
-                st.session_state["page"] = "mood_journal"
-                st.rerun()
-            else:
-                st.error("Registration failed")
+            new_email = st.text_input("Email", key="register_email")
+            new_password = st.text_input("Password", type="password", key="register_password")
+            if st.button("Register"):
+                success, result = firebase_register(new_email, new_password)
+                if success:
+                    st.session_state["user_token"] = result["localId"]
+                    st.session_state["page"] = "mood_journal"
+                    st.rerun()
+                else:
+                    st.error("Registration failed")
+    
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
