@@ -1,7 +1,6 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
 import uuid
-import chat_room  # ✅ import thủ công các module cần dùng
 import matchmaker  # Chỉ cần nếu gọi trong login hoặc preload
 import mood_journal  # Gợi ý nếu bạn đã chia file riêng
 import chat_match  # Nếu tách file riêng
