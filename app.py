@@ -133,7 +133,7 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(3)
             st.rerun()
 
-                if user_decision == "No":
+        if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
             st.rerun()
