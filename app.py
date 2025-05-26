@@ -124,18 +124,17 @@ elif st.session_state["page"] == "chat_match":
                             st.session_state["chat_mode"] = "1-1"
                             st.session_state["page"] = "chat_room"
                             st.rerun()
-                        elif user_id in confirmations and all(uid in confirmations for uid in members):
-                            partner_id = [uid for uid in members if uid != user_id][0]
-                            st.session_state["partner_id"] = partner_id
-                            st.session_state["partner_name"] = "Stranger"
-                            st.session_state["chat_mode"] = "1-1"
-                            st.session_state["page"] = "chat_room"
-                            st.rerun()
-
+                    elif user_id in confirmations and all(uid in confirmations for uid in members):
+                partner_id = [uid for uid in members if uid != user_id][0]
+                        st.session_state["partner_id"] = partner_id
+                        st.session_state["partner_name"] = "Stranger"
+                        st.session_state["chat_mode"] = "1-1"
+                        st.session_state["page"] = "chat_room"
+                        st.rerun()
 
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
-    st.write("✅ Match result:", match_result)
+    
 
     if match_result["success"]:
         # Hiển thị lựa chọn xác nhận match
@@ -151,7 +150,7 @@ elif st.session_state["page"] == "chat_match":
             time.sleep(3)
             st.rerun()
 
-        if user_decision == "No":
+                if user_decision == "No":
             st.info("⏳ Waiting for another match...")
             time.sleep(5)
             st.rerun()
@@ -180,7 +179,7 @@ elif st.session_state["page"] == "chat_match":
             st.rerun()
 
         
-    else:
+    elif not match_result["success"] and "partner_id" not in st.session_state:
         st.warning("😢 No suitable match found. Retrying...")
         st.info("🔄 Retrying match in 5 seconds...")
 
