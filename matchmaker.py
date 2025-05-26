@@ -18,9 +18,12 @@ class MatchMaker:
         for uid, info in candidates.items():
             if uid != user_id and info.get("emotion") == emotion:
                 # Nếu đã offline quá 30 giây → loại bỏ
-                if not info.get("is_online") or time.time() - info.get("timestamp", 0) > 30:
+                last_seen = info.get("timestamp", 0)
+                is_recent = time.time() - last_seen <= 30
+                if not is_recent:
                     self.waiting_list_ref.child(uid).delete()
                     continue
+                    
                 # ✅ Match hợp lệ
                 self.waiting_list_ref.child(uid).delete()
                 return {
