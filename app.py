@@ -96,6 +96,19 @@ elif st.session_state["page"] == "chat_match":
     st.markdown(f"🧠 Your current emotion: **{emotion}**")
     st.write("🔍 Searching for someone to talk to...")
 
+    # Step 1: Check if this user is already matched in an existing chat room
+    room_candidates = db.reference("/chat_rooms").get()
+    if room_candidates:
+        for room_id, room in room_candidates.items():
+            members = room.get("members", [])
+            if user_id in members and len(members) == 2:
+                partner_id = [uid for uid in members if uid != user_id][0]
+                st.session_state["partner_id"] = partner_id
+                st.session_state["partner_name"] = "Anonymous"
+                st.session_state["chat_mode"] = "1-1"
+                st.session_state["page"] = "chat_room"
+                st.rerun()
+
     matcher = MatchMaker()
     match_result = matcher.find_match(emotion, user_id, name=nickname)
     st.write("✅ Match result:", match_result)
@@ -112,7 +125,7 @@ elif st.session_state["page"] == "chat_match":
         st.info("🔄 Retrying match in 5 seconds...")
 
         if st.button("🛑 Stop Matching and Go Back"):
-            db.reference("/waiting_list").child(user_id).delete()  # ❗ Remove from waitlist when user cancels
+            db.reference("/waiting_list").child(user_id).delete()
             st.session_state["page"] = "mood_journal"
             st.rerun()
 
