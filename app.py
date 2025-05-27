@@ -194,7 +194,6 @@ if st.session_state.get("view_chart"):
         if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
     ]
 
-    # Sắp xếp theo thời gian
     entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
 
     if entries:
@@ -204,7 +203,7 @@ if st.session_state.get("view_chart"):
             emo = e.get("emotion", "").strip().capitalize()
             ts = e.get("timestamp")
             if ts and emo in EMOTION_SCORE_MAP:
-                dt = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(tz)
+                dt = datetime.fromtimestamp(ts, tz)  # ✅ ĐÃ SỬA: đúng timezone
                 dates.append(dt)
                 scores.append(EMOTION_SCORE_MAP[emo][1])
 
@@ -215,7 +214,7 @@ if st.session_state.get("view_chart"):
             ax.set_xlabel(L["date"])
             ax.set_ylabel(L["mood_score"])
             ax.grid(True, linestyle="--", alpha=0.3)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m\n%H:%M"))  # 👈 Xuống dòng ngày/giờ
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m\n%H:%M"))
             ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
             plt.xticks(rotation=45)
             st.pyplot(fig)
@@ -243,7 +242,7 @@ if st.session_state.get("view_chart"):
             text = e.get("text", "")
             ts = e.get("timestamp")
             tz = pytz.timezone("Asia/Taipei")
-            time_str = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(tz).strftime("%d/%m %H:%M") if ts else ""
+            time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
             st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
     else:
         st.info("📭 No entries yet.")
