@@ -160,10 +160,6 @@ elif st.session_state.get("page") == "mood_journal":
             if emotion == "Depressed":
                 suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
                 st.info(f"{L['suggestion']} {suggestion}")
-
-    if st.button(L["view_chart"]):
-    st.session_state["view_chart"] = True
-    st.rerun()
     
     if st.session_state.get("view_chart"):
         st.markdown("### 📈 " + {
