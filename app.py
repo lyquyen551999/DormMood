@@ -6,6 +6,7 @@ import threading
 from firebase_admin import db
 from chat_firebase import ChatFirebase
 from datetime import datetime
+from textblob import TextBlob
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -82,6 +83,29 @@ elif st.session_state["page"] == "mood_journal":
         db.reference("/match_confirmations").child(st.session_state["user_token"]).delete()
         st.session_state.clear()
         st.rerun()
+
+def detect_emotion(text):
+    blob = TextBlob(text)
+    polarity = blob.sentiment.polarity
+
+    if polarity > 0.4:
+        return "😊 Happy"
+    elif polarity > 0.1:
+        return "🙂 Content"
+    elif polarity > -0.1:
+        return "😐 Neutral"
+    elif polarity > -0.4:
+        return "😟 Sad"
+    else:
+        return "😢 Depressed"
+
+user_text = st.text_area("Write your thoughts...")
+
+if user_text and st.button("Detect Emotion"):
+    auto_emotion = detect_emotion(user_text)
+    st.success(f"✨ Suggested Emotion: {auto_emotion}")
+    st.session_state["latest_emotion"] = auto_emotion
+
 
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
