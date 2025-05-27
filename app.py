@@ -58,7 +58,7 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
-    
+
     LANGUAGE_MAP = {
         "English": {
             "title": "🧠 Mood Journal",
@@ -183,23 +183,22 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_xlabel(L["date"])
                 ax.set_ylabel(L["mood_score"])
                 ax.grid(True, linestyle="--", alpha=0.4)
-                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                fig.autofmt_xdate()
+                ax.xaxis.set_major_locator(mdates.DayLocator())
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
-                plt.xticks(rotation=45)
                 st.pyplot(fig)
             else:
                 st.info("📭 No mood scores yet.")
         else:
             st.info("📭 No entries found.")
 
-    # 👇 Timeline luôn hiển thị ở cuối
     all_entries = db.reference("/journal_entries").get() or {}
     timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
     if timeline_entries:
         st.subheader("🕰️ " + L["timeline"])
         for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
-            emoji = e.get("emoji", "❓")
             emo = e.get("emotion", "Unknown")
+            emoji = EMOTION_SCORE_MAP.get(emo, ("❓",))[0]
             text = e.get("text", "")
             st.markdown(f"- **{emoji} {emo}**: {text}")
     else:
