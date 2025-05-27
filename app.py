@@ -12,8 +12,6 @@ from matplotlib import dates as mdates
 import random
 from collections import defaultdict
 
-
-
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
 # Hide sidebar
@@ -163,29 +161,59 @@ elif st.session_state.get("page") == "mood_journal":
                 suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
                 st.info(f"{L['suggestion']} {suggestion}")
 
-    if st.button(L["view_chart"]):
-        entries = db.reference("/journal_entries").order_by_child("user_id").equal_to(user_id).get()
-        daily_scores = defaultdict(list)
-
-        for item in (entries or {}).values():
-            ts = item.get("timestamp")
-            score = item.get("score")
-            if ts and score is not None:
-                date = datetime.fromtimestamp(ts).date()
-                daily_scores[date].append(score)
-
-        if daily_scores:
-            avg_scores = {date: sum(scores) / len(scores) for date, scores in daily_scores.items()}
-            dates, scores = zip(*sorted(avg_scores.items()))
+    if st.session_state.get("show_chart"):
+        st.markdown("### 📈 " + {
+            "en": "Mood Trend Over Time",
+            "vi": "Biểu đồ xu hướng cảm xúc",
+            "zh": "心情趨勢圖"
+        }[st.session_state["lang"]])
+    
+        # Lấy dữ liệu từ Firebase (an toàn)
+        all_entries = db.reference("/journal_entries").get() or {}
+        entries = [entry for entry in all_entries.values() if entry.get("user_id") == user_id]
+    
+        if not entries:
+            st.warning({
+                "en": "No entries to display.",
+                "vi": "Chưa có bản ghi nào để hiển thị.",
+                "zh": "尚無紀錄可顯示。"
+            }[st.session_state["lang"]])
+        else:
+            entries.sort(key=lambda e: e.get("timestamp", 0))
+    
+            dates = []
+            scores = []
+            for entry in entries:
+                ts = entry.get("timestamp")
+                emo = entry.get("emotion")
+                if ts and emo in EMOTION_SCORE_MAP:
+                    date = datetime.fromtimestamp(ts)
+                    dates.append(date)
+                    scores.append(EMOTION_SCORE_MAP[emo])
+    
+            # Vẽ biểu đồ
             fig, ax = plt.subplots()
-            ax.plot(dates, scores, marker='o')
-            ax.set_title(L["chart_title"])
-            ax.set_xlabel(L["date"])
-            ax.set_ylabel(L["mood_score"])
-            ax.grid(True, linestyle='--', alpha=0.5)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-            plt.xticks(rotation=45)
+            ax.plot(dates, scores, marker="o")
+            ax.set_xlabel({
+                "en": "Date",
+                "vi": "Ngày",
+                "zh": "日期"
+            }[st.session_state["lang"]])
+            ax.set_ylabel({
+                "en": "Mood Score",
+                "vi": "Điểm cảm xúc",
+                "zh": "心情分數"
+            }[st.session_state["lang"]])
+            ax.set_title({
+                "en": "🧠 Mood Trend Over Time",
+                "vi": "🧠 Xu hướng cảm xúc theo thời gian",
+                "zh": "🧠 心情隨時間變化圖"
+            }[st.session_state["lang"]])
+            ax.grid(True)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            fig.autofmt_xdate()
             st.pyplot(fig)
+
 
 
 # ========== CHAT MATCH ==========
