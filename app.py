@@ -198,8 +198,8 @@ elif st.session_state["page"] == "mood_journal":
         else:
             st.info("📭 No entries yet.")
        
-        else:
-            st.warning("⚠ Please enter some text.")
+    else:
+        st.warning("⚠ Please enter some text.")
 
     # Nút hiển thị biểu đồ
     if st.button(L["view_chart"]):
