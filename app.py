@@ -233,7 +233,7 @@ elif st.session_state["page"] == "mood_journal":
                 
             text = e.get("text", "")
             ts = e.get("timestamp")
-            time_str = datetime.fromtimestamp(ts).strftime("%d/%m %H:%M") if ts else ""
+            time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
             st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
     else:
         st.info("📭 No entries yet.")
