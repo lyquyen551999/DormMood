@@ -120,7 +120,7 @@ elif st.session_state.get("page") == "mood_journal":
     }
     
     # ========= Mood Mapping =========
-    EMOJI_MAP = {
+    EMOTION_SCORE_MAP = {
         "positive": ("😊", "Happy", 2),
         "neutral": ("😐", "Neutral", 0),
         "negative": ("🥺", "Depressed", -2)
