@@ -99,13 +99,22 @@ elif st.session_state["page"] == "mood_journal":
 
     # Timeline
     if st.button("View My Timeline", key="view_timeline"):
-        timeline_ref = db.reference("/journal_entries").order_by_child("user_id").equal_to(user_id).get()
+        all_entries = db.reference("/journal_entries").get()
         st.markdown("### 🕰️ Mood Timeline")
-        if timeline_ref:
-            for _, entry in sorted(timeline_ref.items(), key=lambda x: x[1]["timestamp"], reverse=True):
-                st.markdown(f"- **{user_id}**: {entry['emotion']} - {entry['text']}")
+    
+        if all_entries:
+            user_entries = [
+                entry for entry in all_entries.values()
+                if entry.get("user_id") == user_id
+            ]
+            if user_entries:
+                for entry in sorted(user_entries, key=lambda x: x["timestamp"], reverse=True):
+                    st.markdown(f"- **{user_id}**: {entry['emotion']} - {entry['text']}")
+            else:
+                st.info("No entries yet.")
         else:
             st.info("No entries found.")
+
 
 
 # ========== CHAT MATCH ==========
