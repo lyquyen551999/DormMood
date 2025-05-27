@@ -204,7 +204,7 @@ if st.session_state.get("view_chart"):
             emo = e.get("emotion", "").strip().capitalize()
             ts = e.get("timestamp")
             if ts and emo in EMOTION_SCORE_MAP:
-                dt = datetime.fromtimestamp(ts, tz)
+                dt = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(tz)
                 dates.append(dt)
                 scores.append(EMOTION_SCORE_MAP[emo][1])
 
@@ -243,7 +243,7 @@ if st.session_state.get("view_chart"):
             text = e.get("text", "")
             ts = e.get("timestamp")
             tz = pytz.timezone("Asia/Taipei")
-            time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
+            time_str = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(tz).strftime("%d/%m %H:%M") if ts else ""
             st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
     else:
         st.info("📭 No entries yet.")
