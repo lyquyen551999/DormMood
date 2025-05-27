@@ -8,6 +8,8 @@ from chat_firebase import ChatFirebase
 from datetime import datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
+from matplotlib import dates as mdates
+
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
