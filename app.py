@@ -214,7 +214,7 @@ if st.session_state.get("view_chart"):
             ax.set_xlabel(L["date"])
             ax.set_ylabel(L["mood_score"])
             ax.grid(True, linestyle="--", alpha=0.3)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m\n%H:%M"))
             ax.set_xticks(dates)  # đặt đúng số lượng mốc thời gian trùng entries
             plt.xticks(rotation=45)
             st.pyplot(fig)
