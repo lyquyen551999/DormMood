@@ -143,7 +143,7 @@ elif st.session_state["page"] == "mood_journal":
             scores = []
             for entry in sorted(user_entries, key=lambda x: x["timestamp"]):
                 score = EMOTION_SCORES.get(entry["emotion"], 0)
-                date = datetime.datetime.fromtimestamp(entry["timestamp"]).date()
+                date = datetime.fromtimestamp(entry["timestamp"]).date()
                 dates.append(date)
                 scores.append(score)
 
