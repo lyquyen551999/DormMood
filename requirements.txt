@@ -3,4 +3,4 @@ firebase-admin>=6.2.0
 requests
 python-dotenv
 vaderSentiment
-
+matplotlib
