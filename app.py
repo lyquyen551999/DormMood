@@ -61,7 +61,7 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
- 
+    tz = pytz.timezone("Asia/Taipei") 
     # Ngôn ngữ hỗ trợ
     LANGUAGE_MAP = {
         "English": {
