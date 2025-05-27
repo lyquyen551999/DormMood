@@ -167,6 +167,8 @@ elif st.session_state["page"] == "mood_journal":
 
             st.session_state["latest_emotion"] = emoji
             st.success(f"{L['saved']} {emoji} {emotion}")
+            st.rerun()
+
 
             if emotion == "Depressed":
                 st.info(f"{L['suggestion']} {random.choice(SAD_ACTION_SUGGESTIONS[lang])}")
