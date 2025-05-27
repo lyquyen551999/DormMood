@@ -189,8 +189,8 @@ elif st.session_state["page"] == "mood_journal":
                 emo = e.get("emotion")
                 ts = e.get("timestamp")
                 if ts and emo in EMOTION_SCORE_MAP:
-                    date = datetime.fromtimestamp(ts).date()
-                    daily_scores[date].append(EMOTION_SCORE_MAP[emo][1])
+                    date = datetime.fromtimestamp(ts)
+                    daily_scores[date.date()].append(EMOTION_SCORE_MAP[emo][1])
 
             if daily_scores:
                 avg_scores = {
@@ -204,9 +204,11 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_xlabel(L["date"])
                 ax.set_ylabel(L["mood_score"])
                 ax.grid(True, linestyle="--", alpha=0.4)
-                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
                 plt.xticks(rotation=45)
                 st.pyplot(fig)
+
             else:
                 st.info("📭 No mood scores yet.")
         else:
