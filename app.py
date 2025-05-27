@@ -67,8 +67,8 @@ elif st.session_state["page"] == "mood_journal":
         st.rerun()
 
     if st.button("🔙 Back to Journal"):
-    st.session_state["page"] = "mood_journal"
-    st.rerun()
+        st.session_state["page"] = "mood_journal"
+        st.rerun()
 
 
     tz = pytz.timezone("Asia/Taipei") 
