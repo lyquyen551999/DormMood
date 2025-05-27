@@ -52,9 +52,11 @@ if st.session_state["page"] == "login":
     
 
 # ========== JOURNAL ==========
+# Giao diện Mood Journal
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
 
+    # Hàm phân tích cảm xúc từ văn bản
     def detect_emotion_vader(text):
         analyzer = SentimentIntensityAnalyzer()
         score = analyzer.polarity_scores(text)["compound"]
@@ -75,33 +77,33 @@ elif st.session_state["page"] == "mood_journal":
 
     st.markdown(f"Welcome, user: **{user_id}**")
 
-    # Emoji dropdown
-    emoji_options = ["😊 Happy", "🙂 Content", "😐 Neutral", "😟 Sad", "😢 Depressed"]
-    selected_emoji = st.selectbox("How do you feel today?", emoji_options, key="emoji_dropdown")
-
-    # Tâm sự
+    # Ô nhập nhật ký
     user_text = st.text_area("Write your thoughts...", key="journal_text_area")
 
     if st.button("Submit Entry", key="submit_journal"):
-        # Nếu người dùng chưa chọn emoji, tự detect
-        if not selected_emoji or selected_emoji.strip() == "":
-            selected_emoji = detect_emotion_vader(user_text)
-            st.info(f"✨ Automatically detected emotion: {selected_emoji}")
+        if not user_text.strip():
+            st.warning("Please write something before submitting.")
+        else:
+            # Tự động phát hiện emoji
+            auto_emoji = detect_emotion_vader(user_text)
+            st.session_state["latest_emotion"] = auto_emoji  # dùng cho matching
 
-        entry_ref = db.reference("/journal_entries").push()
-        entry_ref.set({
-            "user_id": user_id,
-            "emotion": selected_emoji,
-            "text": user_text,
-            "timestamp": time.time()
-        })
-        st.success("Your entry has been saved!")
+            # Lưu vào Firebase
+            entry_ref = db.reference("/journal_entries").push()
+            entry_ref.set({
+                "user_id": user_id,
+                "emotion": auto_emoji,
+                "text": user_text,
+                "timestamp": time.time()
+            })
+
+            st.success(f"✅ Entry saved with emotion: {auto_emoji}")
 
     # Timeline
     if st.button("View My Timeline", key="view_timeline"):
         all_entries = db.reference("/journal_entries").get()
         st.markdown("### 🕰️ Mood Timeline")
-    
+
         if all_entries:
             user_entries = [
                 entry for entry in all_entries.values()
