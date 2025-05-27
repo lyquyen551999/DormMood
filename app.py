@@ -62,8 +62,8 @@ if st.session_state["page"] == "login":
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
     
-    if st.button("📅 View Community Events"):
-        st.session_state["page"] = "community_events"
+    if st.button("🌏 Visit International Community"):
+        st.session_state["page"] = "international_community"
         st.rerun()
 
 
@@ -147,6 +147,20 @@ elif st.session_state["page"] == "mood_journal":
     st.title(L["title"])
 
     user_id = st.session_state.get("user_token", "demo")
+    # Kiểm tra và chọn quốc tịch
+    user_ref = db.reference("/users").child(user_id)
+    user_info = user_ref.get() or {}
+    
+    if "nationality" not in user_info:
+        nationality = st.selectbox("🌍 Please select your nationality:", [
+            "Vietnam 🇻🇳", "Taiwan 🇹🇼", "Japan 🇯🇵", "USA 🇺🇸", "Thailand 🇹🇭", "Korea 🇰🇷", "Indonesia 🇮🇩", "Others 🌐"
+        ])
+        if st.button("Confirm"):
+            user_ref.update({"nationality": nationality})
+            st.success("✅ Nationality saved!")
+            st.rerun()
+        st.stop()  # ⛔ Ngừng hiển thị phần còn lại nếu chưa chọn quốc tịch
+
     analyzer = SentimentIntensityAnalyzer()
 
     user_text = st.text_area(L["write_thoughts"], key="journal_input")
@@ -390,40 +404,25 @@ elif st.session_state["page"] == "chat_room":
 
     time.sleep(5)
     st.rerun()
-elif st.session_state["page"] == "community_events":
-    st.title("📅 Community Events")
+elif st.session_state["page"] == "international_community":
+    st.title("🌏 International Community")
 
-    events_ref = db.reference("/community_events")
-    all_events = events_ref.get() or {}
+    user_ref = db.reference("/users").child(user_id)
+    user_info = user_ref.get() or {}
+    my_nation = user_info.get("nationality", "🌐 Unknown")
+    st.markdown(f"🌐 **Your nationality:** {my_nation}")
 
-    if not all_events:
-        st.info("📭 No events available right now.")
-    else:
-        for event_id, event_data in all_events.items():
-            st.markdown(f"### 🎉 {event_data.get('title', 'Untitled')}")
-            st.markdown(f"📅 Date: {event_data.get('date', 'Unknown')}")
-            st.markdown(f"📝 {event_data.get('description', '')}")
+    st.markdown("---")
+    st.subheader(f"🧑‍🤝‍🧑 Students from {my_nation}")
 
-            participants = event_data.get("participants", [])
-            already_joined = user_id in participants
+    all_users = db.reference("/users").get() or {}
+    for uid, info in all_users.items():
+        if uid != user_id and info.get("nationality") == my_nation:
+            nickname = f"User-{uid[-5:]}"
+            st.markdown(f"- {nickname} ({info['nationality']})")
 
-            if already_joined:
-                st.success("✅ You have joined this event.")
-            else:
-                if st.button(f"🙋 Join: {event_data.get('title')}", key=f"join_{event_id}"):
-                    participants.append(user_id)
-                    events_ref.child(event_id).update({"participants": participants})
-                    st.success("🎉 You have joined this event.")
-                    st.rerun()
-
-            if participants:
-                st.markdown("👥 Participants:")
-                for uid in participants:
-                    nickname = f"User-{uid[-5:]}" if uid != user_id else "You"
-                    st.markdown(f"- {nickname}")
-            st.markdown("---")
-    # Nút quay lại nhật ký
     if st.button("🔙 Back to Journal"):
         st.session_state["page"] = "mood_journal"
         st.rerun()
+
 
