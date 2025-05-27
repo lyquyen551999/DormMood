@@ -61,6 +61,11 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
+    
+    if st.button("📅 View Community Events"):
+    st.session_state["page"] = "community_events"
+    st.rerun()
+
     tz = pytz.timezone("Asia/Taipei") 
     # Ngôn ngữ hỗ trợ
     LANGUAGE_MAP = {
@@ -384,3 +389,35 @@ elif st.session_state["page"] == "chat_room":
 
     time.sleep(5)
     st.rerun()
+elif st.session_state["page"] == "community_events":
+    st.title("📅 Community Events")
+
+    events_ref = db.reference("/community_events")
+    all_events = events_ref.get() or {}
+
+    if not all_events:
+        st.info("📭 No events available right now.")
+    else:
+        for event_id, event_data in all_events.items():
+            st.markdown(f"### 🎉 {event_data.get('title', 'Untitled')}")
+            st.markdown(f"📅 Date: {event_data.get('date', 'Unknown')}")
+            st.markdown(f"📝 {event_data.get('description', '')}")
+
+            participants = event_data.get("participants", [])
+            already_joined = user_id in participants
+
+            if already_joined:
+                st.success("✅ You have joined this event.")
+            else:
+                if st.button(f"🙋 Join: {event_data.get('title')}", key=f"join_{event_id}"):
+                    participants.append(user_id)
+                    events_ref.child(event_id).update({"participants": participants})
+                    st.success("🎉 You have joined this event.")
+                    st.rerun()
+
+            if participants:
+                st.markdown("👥 Participants:")
+                for uid in participants:
+                    nickname = f"User-{uid[-5:]}" if uid != user_id else "You"
+                    st.markdown(f"- {nickname}")
+            st.markdown("---")
