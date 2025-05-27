@@ -9,6 +9,8 @@ from datetime import datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 from matplotlib import dates as mdates
+import random
+
 
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
