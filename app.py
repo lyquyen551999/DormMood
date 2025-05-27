@@ -57,8 +57,8 @@ if st.session_state["page"] == "login":
 
 
 # ========== JOURNAL ==========
-elif st.session_state.get("page") == "mood_journal":
-    # ========= Đa ngôn ngữ =========
+elif st.session_state["page"] == "mood_journal":
+    # Ngôn ngữ hỗ trợ
     LANGUAGE_MAP = {
         "English": {
             "title": "🧠 Mood Journal",
@@ -69,7 +69,9 @@ elif st.session_state.get("page") == "mood_journal":
             "view_chart": "📈 View Mood Chart",
             "chart_title": "📈 Mood Trend Over Time",
             "date": "Date",
-            "mood_score": "Mood Score"
+            "mood_score": "Mood Score",
+            "timeline": "Mood Timeline",
+            "back": "Back to Journal"
         },
         "Vietnamese": {
             "title": "🧠 Nhật ký cảm xúc",
@@ -78,9 +80,11 @@ elif st.session_state.get("page") == "mood_journal":
             "saved": "✅ Đã lưu với cảm xúc:",
             "suggestion": "🧠 Gợi ý hành động:",
             "view_chart": "📈 Xem biểu đồ cảm xúc",
-            "chart_title": "📈 Biểu đồ xu hướng cảm xúc",
+            "chart_title": "📈 Xu hướng cảm xúc theo thời gian",
             "date": "Ngày",
-            "mood_score": "Chỉ số cảm xúc"
+            "mood_score": "Chỉ số cảm xúc",
+            "timeline": "Dòng thời gian cảm xúc",
+            "back": "Quay lại nhật ký"
         },
         "繁體中文": {
             "title": "🧠 心情日記",
@@ -91,10 +95,12 @@ elif st.session_state.get("page") == "mood_journal":
             "view_chart": "📈 查看心情圖表",
             "chart_title": "📈 心情變化趨勢圖",
             "date": "日期",
-            "mood_score": "心情分數"
+            "mood_score": "心情分數",
+            "timeline": "心情時間軸",
+            "back": "返回日記"
         }
     }
-    
+
     SAD_ACTION_SUGGESTIONS = {
         "English": [
             "🧘 Try 5 minutes of deep breathing or meditation.",
@@ -118,16 +124,13 @@ elif st.session_state.get("page") == "mood_journal":
             "🎵 聽些能讓你平靜或被理解的音樂。"
         ]
     }
-    
-    # ========= Mood Mapping =========
+
     EMOTION_SCORE_MAP = {
-        "positive": ("😊", "Happy", 2),
-        "neutral": ("😐", "Neutral", 0),
-        "negative": ("🥺", "Depressed", -2)
+        "Happy": ("😊", 2),
+        "Neutral": ("😐", 0),
+        "Depressed": ("🥺", -2)
     }
 
-
-    # Chọn ngôn ngữ
     lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
     L = LANGUAGE_MAP[lang]
     st.session_state["lang"] = lang
@@ -136,23 +139,26 @@ elif st.session_state.get("page") == "mood_journal":
     user_id = st.session_state.get("user_token", "demo")
     analyzer = SentimentIntensityAnalyzer()
 
-    # Ô nhập tâm sự
     user_text = st.text_area(L["write_thoughts"], key="journal_input")
     if st.button(L["submit"]):
         if user_text:
             score = analyzer.polarity_scores(user_text)["compound"]
             if score >= 0.4:
-                emoji, emotion = "😊", "Happy"
+                emotion = "Happy"
             elif score <= -0.4:
-                emoji, emotion = "🥺", "Depressed"
+                emotion = "Depressed"
             else:
-                emoji, emotion = "😐", "Neutral"
+                emotion = "Neutral"
+
+            emoji, mood_score = EMOTION_SCORE_MAP[emotion]
 
             db.reference("/journal_entries").push({
                 "user_id": user_id,
                 "text": user_text,
                 "emotion": emotion,
-                "timestamp": time.time()
+                "emoji": emoji,
+                "timestamp": time.time(),
+                "score": mood_score
             })
 
             st.session_state["latest_emotion"] = emoji
@@ -163,18 +169,14 @@ elif st.session_state.get("page") == "mood_journal":
         else:
             st.warning("⚠ Please enter some text.")
 
-    # Nút xem biểu đồ (đặt bên ngoài)
+    # Nút hiển thị biểu đồ
     if st.button(L["view_chart"]):
         st.session_state["view_chart"] = True
         st.rerun()
 
-    # Hiển thị biểu đồ nếu đã bấm
+    # Nếu ở chế độ xem biểu đồ
     if st.session_state.get("view_chart"):
-        if st.button("🔙 " + {
-            "English": "Back to Journal",
-            "Vietnamese": "Quay lại nhật ký",
-            "繁體中文": "返回日記"
-        }[lang]):
+        if st.button("🔙 " + L["back"]):
             st.session_state["view_chart"] = False
             st.rerun()
 
@@ -188,10 +190,13 @@ elif st.session_state.get("page") == "mood_journal":
                 ts = e.get("timestamp")
                 if ts and emo in EMOTION_SCORE_MAP:
                     date = datetime.fromtimestamp(ts).date()
-                    daily_scores[date].append(EMOTION_SCORE_MAP[emo])
+                    daily_scores[date].append(EMOTION_SCORE_MAP[emo][1])
 
             if daily_scores:
-                avg_scores = {d: sum(v)/len(v) for d, v in daily_scores.items()}
+                avg_scores = {
+                    d: sum(v) / len(v)
+                    for d, v in daily_scores.items()
+                }
                 dates, scores = zip(*sorted(avg_scores.items()))
                 fig, ax = plt.subplots()
                 ax.plot(dates, scores, marker='o')
@@ -207,6 +212,18 @@ elif st.session_state.get("page") == "mood_journal":
         else:
             st.info("📭 No entries found.")
 
+    # Timeline bên dưới
+    all_entries = db.reference("/journal_entries").get() or {}
+    timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
+    if timeline_entries:
+        st.subheader("🕰️ " + L["timeline"])
+        for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
+            emoji = e.get("emoji", "❓")
+            emo = e.get("emotion", "Unknown")
+            text = e.get("text", "")
+            st.markdown(f"- **{emoji} {emo}**: {text}")
+    else:
+        st.info("📭 No entries yet.")
 
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
