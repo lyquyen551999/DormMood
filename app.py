@@ -7,6 +7,7 @@ from firebase_admin import db
 from chat_firebase import ChatFirebase
 from datetime import datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -52,11 +53,20 @@ if st.session_state["page"] == "login":
     
 
 # ========== JOURNAL ==========
-# Giao diện Mood Journal
+# 📔 Giao diện Mood Journal
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
 
-    # Hàm phân tích cảm xúc từ văn bản
+    # 🌟 Gán điểm cảm xúc
+    EMOTION_SCORES = {
+        "😊 Happy": 2,
+        "🙂 Content": 1,
+        "😐 Neutral": 0,
+        "😟 Sad": -1,
+        "😢 Depressed": -2
+    }
+    
+    # 💡 Phân tích cảm xúc tự động
     def detect_emotion_vader(text):
         analyzer = SentimentIntensityAnalyzer()
         score = analyzer.polarity_scores(text)["compound"]
@@ -77,18 +87,18 @@ elif st.session_state["page"] == "mood_journal":
 
     st.markdown(f"Welcome, user: **{user_id}**")
 
-    # Ô nhập nhật ký
+    # Nhập nội dung
     user_text = st.text_area("Write your thoughts...", key="journal_text_area")
 
     if st.button("Submit Entry", key="submit_journal"):
         if not user_text.strip():
             st.warning("Please write something before submitting.")
         else:
-            # Tự động phát hiện emoji
+            # Phát hiện cảm xúc
             auto_emoji = detect_emotion_vader(user_text)
-            st.session_state["latest_emotion"] = auto_emoji  # dùng cho matching
+            st.session_state["latest_emotion"] = auto_emoji
 
-            # Lưu vào Firebase
+            # Lưu Firebase
             entry_ref = db.reference("/journal_entries").push()
             entry_ref.set({
                 "user_id": user_id,
@@ -116,6 +126,35 @@ elif st.session_state["page"] == "mood_journal":
                 st.info("No entries yet.")
         else:
             st.info("No entries found.")
+
+    # Mood Chart
+    if st.button("📈 View Mood Chart", key="view_chart"):
+        all_entries = db.reference("/journal_entries").get()
+        user_entries = [
+            entry for entry in (all_entries or {}).values()
+            if entry.get("user_id") == user_id
+        ]
+
+        if not user_entries:
+            st.info("You don't have any mood entries yet.")
+        else:
+            # Lấy ngày & điểm cảm xúc
+            dates = []
+            scores = []
+            for entry in sorted(user_entries, key=lambda x: x["timestamp"]):
+                score = EMOTION_SCORES.get(entry["emotion"], 0)
+                date = datetime.datetime.fromtimestamp(entry["timestamp"]).date()
+                dates.append(date)
+                scores.append(score)
+
+            # Vẽ biểu đồ
+            fig, ax = plt.subplots()
+            ax.plot(dates, scores, marker='o', linestyle='-')
+            ax.set_title("📈 Mood Trend Over Time")
+            ax.set_ylabel("Mood Score")
+            ax.set_xlabel("Date")
+            ax.axhline(0, color='gray', linestyle='--', linewidth=0.5)
+            st.pyplot(fig)
 
 
 
