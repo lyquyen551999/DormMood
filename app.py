@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib import dates as mdates
 import random
 from collections import defaultdict
+ from matplotlib.ticker import MaxNLocator
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -58,7 +59,8 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
-
+    
+    # Ngôn ngữ hỗ trợ
     LANGUAGE_MAP = {
         "English": {
             "title": "🧠 Mood Journal",
@@ -102,9 +104,27 @@ elif st.session_state["page"] == "mood_journal":
     }
 
     SAD_ACTION_SUGGESTIONS = {
-        "English": ["🧘 Try 5 minutes of deep breathing or meditation.", "📞 Call a friend...", "✍️ Write in a personal journal...", "🚶 Go for a short walk...", "🎵 Listen to music..."],
-        "Vietnamese": ["🧘 Hãy thử hít thở sâu...", "📞 Gọi cho một người bạn...", "✍️ Viết nhật ký...", "🚶 Đi bộ quanh ký túc...", "🎵 Nghe một bản nhạc..."],
-        "繁體中文": ["🧘 試著深呼吸或冥想...", "📞 打給你信任的朋友...", "✍️ 寫日記或畫出情緒...", "🚶 出去走走...", "🎵 聽些能讓你平靜的音樂..."]
+        "English": [
+            "🧘 Try 5 minutes of deep breathing or meditation.",
+            "📞 Call a friend or family member you trust.",
+            "✍️ Write in a personal journal or draw your emotions.",
+            "🚶 Go for a short walk outside, even just around the dorm.",
+            "🎵 Listen to music that makes you feel understood or calm."
+        ],
+        "Vietnamese": [
+            "🧘 Hãy thử hít thở sâu hoặc thiền trong 5 phút.",
+            "📞 Gọi cho một người bạn hoặc người thân đáng tin cậy.",
+            "✍️ Viết nhật ký hoặc vẽ ra cảm xúc của bạn.",
+            "🚶 Đi bộ một chút bên ngoài, quanh ký túc xá cũng được.",
+            "🎵 Nghe một bản nhạc khiến bạn thấy được chia sẻ."
+        ],
+        "繁體中文": [
+            "🧘 試著深呼吸或冥想 5 分鐘。",
+            "📞 打給你信任的朋友或家人。",
+            "✍️ 寫日誌或畫出你的情緒。",
+            "🚶 出去走走，即使只是在宿舍附近。",
+            "🎵 聽些能讓你平靜或被理解的音樂。"
+        ]
     }
 
     EMOTION_SCORE_MAP = {
@@ -133,6 +153,7 @@ elif st.session_state["page"] == "mood_journal":
                 emotion = "Neutral"
 
             emoji, mood_score = EMOTION_SCORE_MAP[emotion]
+
             db.reference("/journal_entries").push({
                 "user_id": user_id,
                 "text": user_text,
@@ -150,10 +171,12 @@ elif st.session_state["page"] == "mood_journal":
         else:
             st.warning("⚠ Please enter some text.")
 
+    # Nút hiển thị biểu đồ
     if st.button(L["view_chart"]):
         st.session_state["view_chart"] = True
         st.rerun()
 
+    # Nếu ở chế độ xem biểu đồ
     if st.session_state.get("view_chart"):
         if st.button("🔙 " + L["back"]):
             st.session_state["view_chart"] = False
@@ -182,28 +205,30 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_title(L["chart_title"])
                 ax.set_xlabel(L["date"])
                 ax.set_ylabel(L["mood_score"])
-                ax.grid(True, linestyle="--", alpha=0.4)
-                fig.autofmt_xdate()
-                ax.xaxis.set_major_locator(mdates.DayLocator())
+                ax.grid(True, linestyle="--", alpha=0.3)
+                ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+                plt.xticks(rotation=45)
                 st.pyplot(fig)
             else:
                 st.info("📭 No mood scores yet.")
         else:
             st.info("📭 No entries found.")
 
+    # Timeline bên dưới
     all_entries = db.reference("/journal_entries").get() or {}
     timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
     if timeline_entries:
         st.subheader("🕰️ " + L["timeline"])
         for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
-            emo = e.get("emotion", "Unknown")
-            emoji = EMOTION_SCORE_MAP.get(emo, ("❓",))[0]
+            emo = e.get("emotion", "Neutral")
+            emoji = EMOTION_SCORE_MAP.get(emo, ("❓", 0))[0]
             text = e.get("text", "")
-            st.markdown(f"- **{emoji} {emo}**: {text}")
+            ts = e.get("timestamp")
+            time_str = datetime.fromtimestamp(ts).strftime("%d/%m %H:%M") if ts else ""
+            st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
     else:
         st.info("📭 No entries yet.")
-
 
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
