@@ -5,7 +5,7 @@ import time
 import threading
 from firebase_admin import db
 from chat_firebase import ChatFirebase
-from datetime import datetime
+from datetime import datetime, timedelta
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 from matplotlib import dates as mdates
