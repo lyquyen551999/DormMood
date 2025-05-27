@@ -183,25 +183,29 @@ elif st.session_state["page"] == "mood_journal":
         if st.button("🔙 " + L["back"]):
             st.session_state["view_chart"] = False
             st.rerun()
-
+    
         all_entries = db.reference("/journal_entries").get() or {}
-        entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
-
-        # Sắp xếp theo thời gian
+        tz = pytz.timezone("Asia/Taipei")
+        now = datetime.now(tz)
+        seven_days_ago = now - timedelta(days=7)
+        entries = [
+            e for e in all_entries.values()
+            if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
+        ]
+    
         entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
-
+    
         if entries:
             dates = []
             scores = []
             for e in entries:
                 emo = e.get("emotion", "").strip().capitalize()
                 ts = e.get("timestamp")
-                tz = pytz.timezone("Asia/Taipei")
                 if ts and emo in EMOTION_SCORE_MAP:
                     dt = datetime.fromtimestamp(ts, tz)
                     dates.append(dt)
                     scores.append(EMOTION_SCORE_MAP[emo][1])
-
+    
             if dates and scores:
                 fig, ax = plt.subplots()
                 ax.plot(dates, scores, marker='o')
@@ -218,19 +222,23 @@ elif st.session_state["page"] == "mood_journal":
         else:
             st.info("📭 No entries found.")
 
+
     # Timeline bên dưới
     all_entries = db.reference("/journal_entries").get() or {}
     timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
     if timeline_entries:
         st.subheader("🕰️ " + L["timeline"])
+        if st.button("🗑️ Clear Timeline"):
+            for key in all_entries:
+                if all_entries[key].get("user_id") == user_id:
+                    db.reference("/journal_entries").child(key).delete()
+            st.rerun()
         for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):       
-            
             emo = e.get("emotion", "Neutral").strip().capitalize()
             if emo in EMOTION_SCORE_MAP:
                 emoji = EMOTION_SCORE_MAP[emo][0]
             else:
                 emoji = "❓"
-                
             text = e.get("text", "")
             ts = e.get("timestamp")
             tz = pytz.timezone("Asia/Taipei")
