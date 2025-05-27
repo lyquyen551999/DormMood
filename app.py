@@ -172,6 +172,32 @@ elif st.session_state["page"] == "mood_journal":
 
             if emotion == "Depressed":
                 st.info(f"{L['suggestion']} {random.choice(SAD_ACTION_SUGGESTIONS[lang])}")
+
+                        # ==== TIMELINE HIỂN THỊ NGAY BÊN DƯỚI ====
+            all_entries = db.reference("/journal_entries").get() or {}
+            timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
+            
+            if timeline_entries:
+                st.subheader("🕰️ " + L["timeline"])
+                if st.button("🗑️ Clear Timeline"):
+                    for key in all_entries:
+                        if all_entries[key].get("user_id") == user_id:
+                            db.reference("/journal_entries").child(key).delete()
+                    st.rerun()
+            
+                for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
+                    emo = e.get("emotion", "Neutral").strip().capitalize()
+                    if emo in EMOTION_SCORE_MAP:
+                        emoji = EMOTION_SCORE_MAP[emo][0]
+                    else:
+                        emoji = "❓"
+                    text = e.get("text", "")
+                    ts = e.get("timestamp")
+                    time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
+                    st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
+            else:
+                st.info("📭 No entries yet.")
+       
         else:
             st.warning("⚠ Please enter some text.")
 
@@ -180,30 +206,6 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state["view_chart"] = True
         st.rerun()
 
-    # ==== TIMELINE HIỂN THỊ NGAY BÊN DƯỚI ====
-    all_entries = db.reference("/journal_entries").get() or {}
-    timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
-    
-    if timeline_entries:
-        st.subheader("🕰️ " + L["timeline"])
-        if st.button("🗑️ Clear Timeline"):
-            for key in all_entries:
-                if all_entries[key].get("user_id") == user_id:
-                    db.reference("/journal_entries").child(key).delete()
-            st.rerun()
-    
-        for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
-            emo = e.get("emotion", "Neutral").strip().capitalize()
-            if emo in EMOTION_SCORE_MAP:
-                emoji = EMOTION_SCORE_MAP[emo][0]
-            else:
-                emoji = "❓"
-            text = e.get("text", "")
-            ts = e.get("timestamp")
-            time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
-            st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
-    else:
-        st.info("📭 No entries yet.")
 
 # Nếu ở chế độ xem biểu đồ
 if st.session_state.get("view_chart"):
