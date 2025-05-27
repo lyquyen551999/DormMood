@@ -206,10 +206,11 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_xlabel(L["date"])
                 ax.set_ylabel(L["mood_score"])
                 ax.grid(True, linestyle="--", alpha=0.3)
-                ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M"))
+                ax.xaxis.set_major_locator(MaxNLocator(nbins=7))  # hạn chế số lượng nhãn
                 plt.xticks(rotation=45)
                 st.pyplot(fig)
+
             else:
                 st.info("📭 No mood scores yet.")
         else:
@@ -222,7 +223,12 @@ elif st.session_state["page"] == "mood_journal":
         st.subheader("🕰️ " + L["timeline"])
         for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
             emo = e.get("emotion", "Neutral")
-            emoji = EMOTION_SCORE_MAP.get(emo, ("❓", 0))[0]
+         
+            if emo in EMOTION_SCORE_MAP:
+                emoji = EMOTION_SCORE_MAP[emo][0]
+            else:
+                emoji = "❓"
+             
             text = e.get("text", "")
             ts = e.get("timestamp")
             time_str = datetime.fromtimestamp(ts).strftime("%d/%m %H:%M") if ts else ""
