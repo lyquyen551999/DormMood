@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib import dates as mdates
 import random
 from collections import defaultdict
- from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
