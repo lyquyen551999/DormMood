@@ -198,6 +198,11 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state["view_chart"] = True
         st.rerun()
 
+    if st.button("💬 I want to talk to someone"):
+        st.session_state["page"] = "chat_match"
+        st.rerun()
+
+
 # Nếu ở chế độ xem biểu đồ
 if st.session_state.get("view_chart"):
     if st.button("🔙 " + L["back"]):
