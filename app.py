@@ -185,21 +185,21 @@ elif st.session_state["page"] == "mood_journal":
         all_entries = db.reference("/journal_entries").get() or {}
         entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
 
+        # Sắp xếp theo thời gian
+        entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
+
         if entries:
-            daily_scores = defaultdict(list)
+            dates = []
+            scores = []
             for e in entries:
                 emo = e.get("emotion", "").strip().capitalize()
                 ts = e.get("timestamp")
                 if ts and emo in EMOTION_SCORE_MAP:
                     dt = datetime.fromtimestamp(ts)
-                    daily_scores[dt].append(EMOTION_SCORE_MAP[emo][1])
+                    dates.append(dt)
+                    scores.append(EMOTION_SCORE_MAP[emo][1])
 
-            if daily_scores:
-                avg_scores = {
-                    d: sum(v) / len(v)
-                    for d, v in daily_scores.items()
-                }
-                dates, scores = zip(*sorted(avg_scores.items()))
+            if dates and scores:
                 fig, ax = plt.subplots()
                 ax.plot(dates, scores, marker='o')
                 ax.set_title(L["chart_title"])
@@ -207,10 +207,9 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_ylabel(L["mood_score"])
                 ax.grid(True, linestyle="--", alpha=0.3)
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M"))
-                ax.xaxis.set_major_locator(MaxNLocator(nbins=7))
+                ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
                 plt.xticks(rotation=45)
                 st.pyplot(fig)
-
             else:
                 st.info("📭 No mood scores yet.")
         else:
