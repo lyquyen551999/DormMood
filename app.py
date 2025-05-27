@@ -6,7 +6,7 @@ import threading
 from firebase_admin import db
 from chat_firebase import ChatFirebase
 from datetime import datetime
-from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -84,17 +84,17 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state.clear()
         st.rerun()
 
-def detect_emotion(text):
-    blob = TextBlob(text)
-    polarity = blob.sentiment.polarity
+def detect_emotion_vader(text):
+    analyzer = SentimentIntensityAnalyzer()
+    score = analyzer.polarity_scores(text)["compound"]
 
-    if polarity > 0.4:
+    if score > 0.5:
         return "😊 Happy"
-    elif polarity > 0.1:
+    elif score > 0.2:
         return "🙂 Content"
-    elif polarity > -0.1:
+    elif score > -0.2:
         return "😐 Neutral"
-    elif polarity > -0.4:
+    elif score > -0.5:
         return "😟 Sad"
     else:
         return "😢 Depressed"
