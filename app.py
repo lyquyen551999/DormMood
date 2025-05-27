@@ -63,8 +63,8 @@ if st.session_state["page"] == "login":
 elif st.session_state["page"] == "mood_journal":
     
     if st.button("📅 View Community Events"):
-    st.session_state["page"] = "community_events"
-    st.rerun()
+        st.session_state["page"] = "community_events"
+        st.rerun()
 
     tz = pytz.timezone("Asia/Taipei") 
     # Ngôn ngữ hỗ trợ
