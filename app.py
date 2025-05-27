@@ -161,7 +161,7 @@ elif st.session_state.get("page") == "mood_journal":
                 suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
                 st.info(f"{L['suggestion']} {suggestion}")
 
-    if st.session_state.get("show_chart"):
+    if st.session_state.get("view_chart"):
         st.markdown("### 📈 " + {
             "en": "Mood Trend Over Time",
             "vi": "Biểu đồ xu hướng cảm xúc",
