@@ -422,6 +422,3 @@ elif st.session_state["page"] == "community_events":
                     nickname = f"User-{uid[-5:]}" if uid != user_id else "You"
                     st.markdown(f"- {nickname}")
             st.markdown("---")
-        if st.button("🔙 Back to Journal"):
-            st.session_state["page"] = "mood_journal"
-            st.rerun()
