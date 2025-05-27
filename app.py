@@ -61,7 +61,7 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
-    
+    tz = pytz.timezone("Asia/Taipei")    
     # Ngôn ngữ hỗ trợ
     LANGUAGE_MAP = {
         "English": {
@@ -178,51 +178,52 @@ elif st.session_state["page"] == "mood_journal":
         st.session_state["view_chart"] = True
         st.rerun()
 
-    # Nếu ở chế độ xem biểu đồ
-    if st.session_state.get("view_chart"):
-        if st.button("🔙 " + L["back"]):
-            st.session_state["view_chart"] = False
-            st.rerun()
-    
-        all_entries = db.reference("/journal_entries").get() or {}
-        tz = pytz.timezone("Asia/Taipei")
-        now = datetime.now(tz)
-        seven_days_ago = now - timedelta(days=7)
-        entries = [
-            e for e in all_entries.values()
-            if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
-        ]
-    
-        entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
-    
-        if entries:
-            dates = []
-            scores = []
-            for e in entries:
-                emo = e.get("emotion", "").strip().capitalize()
-                ts = e.get("timestamp")
-                if ts and emo in EMOTION_SCORE_MAP:
-                    dt = datetime.fromtimestamp(ts, tz)
-                    dates.append(dt)
-                    scores.append(EMOTION_SCORE_MAP[emo][1])
-    
-            if dates and scores:
-                fig, ax = plt.subplots()
-                ax.plot(dates, scores, marker='o')
-                ax.set_title(L["chart_title"])
-                ax.set_xlabel(L["date"])
-                ax.set_ylabel(L["mood_score"])
-                ax.grid(True, linestyle="--", alpha=0.3)
-                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M"))
-                ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
-                plt.xticks(rotation=45)
-                st.pyplot(fig)
-            else:
-                st.info("📭 No mood scores yet.")
+# Nếu ở chế độ xem biểu đồ
+if st.session_state.get("view_chart"):
+    if st.button("🔙 " + L["back"]):
+        st.session_state["view_chart"] = False
+        st.rerun()
+
+    all_entries = db.reference("/journal_entries").get() or {}
+    now = datetime.now(tz)
+    seven_days_ago = now - timedelta(days=7)
+
+    # Lọc dữ liệu 7 ngày gần nhất
+    entries = [
+        e for e in all_entries.values()
+        if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
+    ]
+
+    # Sắp xếp theo thời gian
+    entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
+
+    if entries:
+        dates = []
+        scores = []
+        for e in entries:
+            emo = e.get("emotion", "").strip().capitalize()
+            ts = e.get("timestamp")
+            if ts and emo in EMOTION_SCORE_MAP:
+                dt = datetime.fromtimestamp(ts, tz)
+                dates.append(dt)
+                scores.append(EMOTION_SCORE_MAP[emo][1])
+
+        if dates and scores:
+            fig, ax = plt.subplots()
+            ax.plot(dates, scores, marker='o')
+            ax.set_title(L["chart_title"])
+            ax.set_xlabel(L["date"])
+            ax.set_ylabel(L["mood_score"])
+            ax.grid(True, linestyle="--", alpha=0.3)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m\n%H:%M"))  # 👈 Xuống dòng ngày/giờ
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
         else:
-            st.info("📭 No entries found.")
-
-
+            st.info("📭 No mood scores yet.")
+    else:
+        st.info("📭 No entries found.")
+        
     # Timeline bên dưới
     all_entries = db.reference("/journal_entries").get() or {}
     timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
