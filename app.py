@@ -405,6 +405,7 @@ elif st.session_state["page"] == "chat_room":
     time.sleep(5)
     st.rerun()
 elif st.session_state["page"] == "international_community":
+    user_id = st.session_state.get("user_token", "demo")
     st.title("🌏 International Community")
 
     user_ref = db.reference("/users").child(user_id)
