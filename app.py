@@ -10,6 +10,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 from matplotlib import dates as mdates
 import random
+from collections import defaultdict
 
 
 
@@ -56,129 +57,138 @@ if st.session_state["page"] == "login":
                     st.error("Registration failed")
     
 
-# ========== JOURNAL ==========
-# 📔 Giao diện Mood Journal
-# ========== JOURNAL ==========
-elif st.session_state["page"] == "mood_journal":
-    # 🌐 Ngôn ngữ đa ngữ
-    LANGUAGES = {"English": "en", "Tiếng Việt": "vi", "繁體中文": "zh"}
-    TEXT = {
-        "mood_journal_title": {"en": "Mood Journal", "vi": "Nhật ký cảm xúc", "zh": "心情日記"},
-        "write_thoughts": {"en": "Write your thoughts...", "vi": "Viết cảm nghĩ của bạn...", "zh": "寫下你的想法..."},
-        "submit_entry": {"en": "Submit Entry", "vi": "Gửi nhật ký", "zh": "提交條目"},
-        "timeline": {"en": "Mood Timeline", "vi": "Dòng thời gian cảm xúc", "zh": "心情時間軸"},
-        "saved": {"en": "Entry saved with emotion:", "vi": "Đã lưu nhật ký với cảm xúc:", "zh": "已保存條目，情緒為："},
-        "suggestion": {"en": "Suggested action:", "vi": "Hành động được gợi ý:", "zh": "建議的行動："},
-        "view_chart": {"en": "View Mood Chart", "vi": "Xem biểu đồ cảm xúc", "zh": "查看心情圖表"}
-    }
 
+# ========== JOURNAL ==========
+elif st.session_state.get("page") == "mood_journal":
+    st.title("🧠 Mood Journal")
+
+    # ========= Đa ngôn ngữ =========
+    LANGUAGE_MAP = {
+        "English": {
+            "title": "🧠 Mood Journal",
+            "write_thoughts": "Write your thoughts...",
+            "submit": "Submit Entry",
+            "saved": "✅ Entry saved with emotion:",
+            "suggestion": "🧠 Suggested action:",
+            "view_chart": "📈 View Mood Chart",
+            "chart_title": "📈 Mood Trend Over Time",
+            "date": "Date",
+            "mood_score": "Mood Score"
+        },
+        "Vietnamese": {
+            "title": "🧠 Nhật ký cảm xúc",
+            "write_thoughts": "Viết suy nghĩ của bạn...",
+            "submit": "Ghi lại",
+            "saved": "✅ Đã lưu với cảm xúc:",
+            "suggestion": "🧠 Gợi ý hành động:",
+            "view_chart": "📈 Xem biểu đồ cảm xúc",
+            "chart_title": "📈 Biểu đồ xu hướng cảm xúc",
+            "date": "Ngày",
+            "mood_score": "Chỉ số cảm xúc"
+        },
+        "繁體中文": {
+            "title": "🧠 心情日記",
+            "write_thoughts": "寫下你的心情...",
+            "submit": "提交紀錄",
+            "saved": "✅ 已儲存，偵測到情緒:",
+            "suggestion": "🧠 建議行動:",
+            "view_chart": "📈 查看心情圖表",
+            "chart_title": "📈 心情變化趨勢圖",
+            "date": "日期",
+            "mood_score": "心情分數"
+        }
+    }
+    
     SAD_ACTION_SUGGESTIONS = {
-        "en": [
-            "📞 Call your family to talk and feel supported.",
-            "🎵 Listen to a relaxing song.",
-            "🚶 Go for a short walk around campus.",
-            "📖 Read something light or positive.",
-            "☕ Treat yourself to a warm drink.",
-            "🗨️ Message a friend or roommate.",
-            "📺 Watch a cozy or funny movie.",
-            "🧘 Try 5 minutes of deep breathing or meditation."
+        "English": [
+            "🧘 Try 5 minutes of deep breathing or meditation.",
+            "📞 Call a friend or family member you trust.",
+            "✍️ Write in a personal journal or draw your emotions.",
+            "🚶 Go for a short walk outside, even just around the dorm.",
+            "🎵 Listen to music that makes you feel understood or calm."
         ],
-        "vi": [
-            "📞 Gọi điện về nhà để trò chuyện cùng gia đình.",
-            "🎵 Nghe một bản nhạc thư giãn.",
-            "🚶 Đi dạo quanh khuôn viên ký túc xá.",
-            "📖 Đọc vài trang sách hoặc truyện tranh nhẹ nhàng.",
-            "☕ Tự thưởng cho mình một ly đồ uống ấm.",
-            "🗨️ Nhắn tin cho bạn cùng phòng hoặc bạn học.",
-            "📺 Xem một bộ phim vui vẻ hoặc dễ thương.",
-            "🧘 Dành 5 phút để tập hít thở sâu hoặc thiền."
+        "Vietnamese": [
+            "🧘 Hãy thử hít thở sâu hoặc thiền trong 5 phút.",
+            "📞 Gọi cho một người bạn hoặc người thân đáng tin cậy.",
+            "✍️ Viết nhật ký hoặc vẽ ra cảm xúc của bạn.",
+            "🚶 Đi bộ một chút bên ngoài, quanh ký túc xá cũng được.",
+            "🎵 Nghe một bản nhạc khiến bạn thấy được chia sẻ."
         ],
-        "zh": [
-            "📞 打電話回家，跟家人聊聊，讓心靈放鬆。",
-            "🎵 聽一首放鬆的音樂。",
-            "🚶 在宿舍附近散步走走。",
-            "📖 看幾頁輕鬆的書或漫畫。",
-            "☕ 給自己一杯溫暖的飲品。",
-            "🗨️ 傳訊息給室友或朋友聊聊天。",
-            "📺 看一部溫馨或搞笑的電影。",
-            "🧘 嘗試深呼吸或冥想 5 分鐘。"
+        "繁體中文": [
+            "🧘 試著深呼吸或冥想 5 分鐘。",
+            "📞 打給你信任的朋友或家人。",
+            "✍️ 寫日記或畫出你的情緒。",
+            "🚶 出去走走，即使只是在宿舍附近。",
+            "🎵 聽些能讓你平靜或被理解的音樂。"
         ]
     }
-
-    lang_choice = st.sidebar.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGES.keys()))
-    L = LANGUAGES[lang_choice]
-    st.session_state["LANGUAGE"] = L
-
-    st.title(f"🧠 {TEXT['mood_journal_title'][L]}")
-
-    user_id = st.session_state.get("user_token", "demo-user")
-    user_text = st.text_area(TEXT["write_thoughts"][L], key="journal_text_area")
-
-    def detect_emotion_vader(text):
-        analyzer = SentimentIntensityAnalyzer()
-        score = analyzer.polarity_scores(text)["compound"]
-        if score >= 0.5:
-            return "😊 Happy"
-        elif score >= 0:
-            return "😐 Neutral"
-        elif score > -0.5:
-            return "😟 Sad"
-        else:
-            return "😢 Depressed"
-
-    EMOTION_SCORES = {
-        "😊 Happy": 2,
-        "😐 Neutral": 0,
-        "😟 Sad": -1,
-        "😢 Depressed": -2
+    
+    # ========= Mood Mapping =========
+    EMOJI_MAP = {
+        "positive": ("😊", "Happy", 2),
+        "neutral": ("😐", "Neutral", 0),
+        "negative": ("🥺", "Depressed", -2)
     }
 
-    if st.button(TEXT["submit_entry"][L], key="submit_journal"):
-        if not user_text.strip():
-            st.warning("❗ Please enter something.")
-        else:
-            auto_emoji = detect_emotion_vader(user_text)
-            st.session_state["latest_emotion"] = auto_emoji
+    lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", options=list(LANGUAGE_MAP.keys()), key="language_select")
+    L = LANGUAGE_MAP.get(lang, LANGUAGE_MAP["English"])
 
+    st.title(L["title"])
+
+    user_id = st.session_state.get("user_token")
+    analyzer = SentimentIntensityAnalyzer()
+
+    user_text = st.text_area(L["write_thoughts"], key="thought_box")
+    if st.button(L["submit"]):
+        if user_text:
+            score = analyzer.polarity_scores(user_text)["compound"]
+            if score >= 0.4:
+                emoji, emotion, mood_score = EMOJI_MAP["positive"]
+            elif score <= -0.4:
+                emoji, emotion, mood_score = EMOJI_MAP["negative"]
+            else:
+                emoji, emotion, mood_score = EMOJI_MAP["neutral"]
+
+            timestamp = datetime.now().timestamp()
             db.reference("/journal_entries").push({
                 "user_id": user_id,
-                "emotion": auto_emoji,
                 "text": user_text,
-                "timestamp": time.time()
+                "emotion": emotion,
+                "emoji": emoji,
+                "timestamp": timestamp,
+                "score": mood_score
             })
 
-            st.success(f"✅ {TEXT['saved'][L]} {auto_emoji}")
+            st.success(f"{L['saved']} {emoji} {emotion}")
 
-            if auto_emoji in ["😟 Sad", "😢 Depressed"]:
-                suggestion = random.choice(SAD_ACTION_SUGGESTIONS[L])
-                st.info(f"🧠 {TEXT['suggestion'][L]} {suggestion}")
+            if emotion == "Depressed":
+                suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
+                st.info(f"{L['suggestion']} {suggestion}")
 
-    if st.button(TEXT["view_chart"][L], key="view_chart"):
-        all_entries = db.reference("/journal_entries").get()
-        user_entries = [entry for entry in (all_entries or {}).values() if entry.get("user_id") == user_id]
+    if st.button(L["view_chart"]):
+        entries = db.reference("/journal_entries").order_by_child("user_id").equal_to(user_id).get()
+        daily_scores = defaultdict(list)
 
-        if not user_entries:
-            st.info("No mood entries yet.")
-        else:
-            dates, scores = [], []
-            for entry in sorted(user_entries, key=lambda x: x["timestamp"]):
-                score = EMOTION_SCORES.get(entry["emotion"], 0)
-                date = datetime.fromtimestamp(entry["timestamp"])
-                dates.append(date)
-                scores.append(score)
+        for item in (entries or {}).values():
+            ts = item.get("timestamp")
+            score = item.get("score")
+            if ts and score is not None:
+                date = datetime.fromtimestamp(ts).date()
+                daily_scores[date].append(score)
 
+        if daily_scores:
+            avg_scores = {date: sum(scores) / len(scores) for date, scores in daily_scores.items()}
+            dates, scores = zip(*sorted(avg_scores.items()))
             fig, ax = plt.subplots()
-            ax.plot(dates, scores, marker='o', linestyle='-', linewidth=2)
-            ax.set_title("📈 Mood Trend Over Time", fontsize=14)
-            ax.set_ylabel("Mood Score")
-            ax.set_xlabel("Date")
+            ax.plot(dates, scores, marker='o')
+            ax.set_title(L["chart_title"])
+            ax.set_xlabel(L["date"])
+            ax.set_ylabel(L["mood_score"])
+            ax.grid(True, linestyle='--', alpha=0.5)
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-            fig.autofmt_xdate(rotation=45)
-            ax.axhline(0, color='gray', linestyle='--', linewidth=0.5)
-            ax.grid(True, linestyle='--', alpha=0.4)
-            ax.set_facecolor('#f9f9f9')
-            fig.patch.set_facecolor('#f9f9f9')
+            plt.xticks(rotation=45)
             st.pyplot(fig)
+
 
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
