@@ -233,6 +233,7 @@ elif st.session_state["page"] == "mood_journal":
                 
             text = e.get("text", "")
             ts = e.get("timestamp")
+            tz = pytz.timezone("Asia/Taipei")
             time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
             st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
     else:
