@@ -126,110 +126,86 @@ elif st.session_state.get("page") == "mood_journal":
         "negative": ("🥺", "Depressed", -2)
     }
 
-    lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", options=list(LANGUAGE_MAP.keys()), key="language_select")
-    L = LANGUAGE_MAP.get(lang, LANGUAGE_MAP["English"])
 
+    # Chọn ngôn ngữ
+    lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
+    L = LANGUAGE_MAP[lang]
+    st.session_state["lang"] = lang
     st.title(L["title"])
 
-    user_id = st.session_state.get("user_token")
+    user_id = st.session_state.get("user_token", "demo")
     analyzer = SentimentIntensityAnalyzer()
 
-    user_text = st.text_area(L["write_thoughts"], key="thought_box")
+    # Ô nhập tâm sự
+    user_text = st.text_area(L["write_thoughts"], key="journal_input")
     if st.button(L["submit"]):
         if user_text:
             score = analyzer.polarity_scores(user_text)["compound"]
             if score >= 0.4:
-                emoji, emotion, mood_score = EMOJI_MAP["positive"]
+                emoji, emotion = "😊", "Happy"
             elif score <= -0.4:
-                emoji, emotion, mood_score = EMOJI_MAP["negative"]
+                emoji, emotion = "🥺", "Depressed"
             else:
-                emoji, emotion, mood_score = EMOJI_MAP["neutral"]
+                emoji, emotion = "😐", "Neutral"
 
-            timestamp = datetime.now().timestamp()
             db.reference("/journal_entries").push({
                 "user_id": user_id,
                 "text": user_text,
                 "emotion": emotion,
-                "emoji": emoji,
-                "timestamp": timestamp,
-                "score": mood_score
+                "timestamp": time.time()
             })
 
+            st.session_state["latest_emotion"] = emoji
             st.success(f"{L['saved']} {emoji} {emotion}")
 
             if emotion == "Depressed":
-                suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
-                st.info(f"{L['suggestion']} {suggestion}")
-    
-    if st.session_state.get("view_chart"):
-        st.markdown("### 📈 " + {
-            "en": "Mood Trend Over Time",
-            "vi": "Biểu đồ xu hướng cảm xúc",
-            "zh": "心情趨勢圖"
-        }[st.session_state["lang"]])
-    
-        # Lấy dữ liệu từ Firebase (an toàn)
-        all_entries = db.reference("/journal_entries").get() or {}
-        entries = [entry for entry in all_entries.values() if entry.get("user_id") == user_id]
-    
-        if not entries:
-            st.warning({
-                "en": "No entries to display.",
-                "vi": "Chưa có bản ghi nào để hiển thị.",
-                "zh": "尚無紀錄可顯示。"
-            }[st.session_state["lang"]])
+                st.info(f"{L['suggestion']} {random.choice(SAD_ACTION_SUGGESTIONS[lang])}")
         else:
-            entries.sort(key=lambda e: e.get("timestamp", 0))
-    
-            dates = []
-            scores = []
-            for entry in entries:
-                ts = entry.get("timestamp")
-                emo = entry.get("emotion")
-                if ts and emo in EMOTION_SCORE_MAP:
-                    date = datetime.fromtimestamp(ts)
-                    dates.append(date)
-                    scores.append(EMOTION_SCORE_MAP[emo])
-    
-            # Vẽ biểu đồ
-            fig, ax = plt.subplots()
-            ax.plot(dates, scores, marker="o")
-            ax.set_xlabel({
-                "en": "Date",
-                "vi": "Ngày",
-                "zh": "日期"
-            }[st.session_state["lang"]])
-            ax.set_ylabel({
-                "en": "Mood Score",
-                "vi": "Điểm cảm xúc",
-                "zh": "心情分數"
-            }[st.session_state["lang"]])
-            ax.set_title({
-                "en": "🧠 Mood Trend Over Time",
-                "vi": "🧠 Xu hướng cảm xúc theo thời gian",
-                "zh": "🧠 心情隨時間變化圖"
-            }[st.session_state["lang"]])
-            ax.grid(True)
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            fig.autofmt_xdate()
-            st.pyplot(fig)
+            st.warning("⚠ Please enter some text.")
 
-        if st.button(L["view_chart"]):
+    # Nút xem biểu đồ (đặt bên ngoài)
+    if st.button(L["view_chart"]):
         st.session_state["view_chart"] = True
         st.rerun()
-    
-        if st.session_state.get("view_chart"):
-            if st.button("🔙 " + {
-                "English": "Back to Journal",
-                "Vietnamese": "Quay lại nhật ký",
-                "繁體中文": "返回日記"
-            }[lang]):
-                st.session_state["view_chart"] = False
-                st.rerun()
 
- 
+    # Hiển thị biểu đồ nếu đã bấm
+    if st.session_state.get("view_chart"):
+        if st.button("🔙 " + {
+            "English": "Back to Journal",
+            "Vietnamese": "Quay lại nhật ký",
+            "繁體中文": "返回日記"
+        }[lang]):
+            st.session_state["view_chart"] = False
+            st.rerun()
 
+        all_entries = db.reference("/journal_entries").get() or {}
+        entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
 
+        if entries:
+            daily_scores = defaultdict(list)
+            for e in entries:
+                emo = e.get("emotion")
+                ts = e.get("timestamp")
+                if ts and emo in EMOTION_SCORE_MAP:
+                    date = datetime.fromtimestamp(ts).date()
+                    daily_scores[date].append(EMOTION_SCORE_MAP[emo])
+
+            if daily_scores:
+                avg_scores = {d: sum(v)/len(v) for d, v in daily_scores.items()}
+                dates, scores = zip(*sorted(avg_scores.items()))
+                fig, ax = plt.subplots()
+                ax.plot(dates, scores, marker='o')
+                ax.set_title(L["chart_title"])
+                ax.set_xlabel(L["date"])
+                ax.set_ylabel(L["mood_score"])
+                ax.grid(True, linestyle="--", alpha=0.4)
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+                plt.xticks(rotation=45)
+                st.pyplot(fig)
+            else:
+                st.info("📭 No mood scores yet.")
+        else:
+            st.info("📭 No entries found.")
 
 
 # ========== CHAT MATCH ==========
