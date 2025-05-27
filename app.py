@@ -154,7 +154,7 @@ elif st.session_state["page"] == "mood_journal":
             # Vẽ biểu đồ đẹp
             fig, ax = plt.subplots()
             ax.plot(dates, scores, marker='o', linestyle='-', linewidth=2)
-            ax.set_title("📈 Mood Trend Over Time", fontsize=14)
+            ax.set_title("Mood Trend Over Time", fontsize=14)
             ax.set_ylabel("Mood Score", fontsize=12)
             ax.set_xlabel("Date", fontsize=12)
     
