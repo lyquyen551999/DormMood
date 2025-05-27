@@ -134,7 +134,7 @@ elif st.session_state["page"] == "mood_journal":
             entry for entry in (all_entries or {}).values()
             if entry.get("user_id") == user_id
         ]
-
+    
         if not user_entries:
             st.info("You don't have any mood entries yet.")
         else:
@@ -143,17 +143,30 @@ elif st.session_state["page"] == "mood_journal":
             scores = []
             for entry in sorted(user_entries, key=lambda x: x["timestamp"]):
                 score = EMOTION_SCORES.get(entry["emotion"], 0)
-                date = datetime.fromtimestamp(entry["timestamp"]).date()
-                dates.append(date)
-                scores.append(score)
-
-            # Vẽ biểu đồ
+                ts = entry["timestamp"]
+                if isinstance(ts, (int, float)):
+                    date = datetime.fromtimestamp(ts)
+                    dates.append(date)
+                    scores.append(score)
+    
+            # Vẽ biểu đồ đẹp
             fig, ax = plt.subplots()
-            ax.plot(dates, scores, marker='o', linestyle='-')
-            ax.set_title("📈 Mood Trend Over Time")
-            ax.set_ylabel("Mood Score")
-            ax.set_xlabel("Date")
+            ax.plot(dates, scores, marker='o', linestyle='-', linewidth=2)
+            ax.set_title("📈 Mood Trend Over Time", fontsize=14)
+            ax.set_ylabel("Mood Score", fontsize=12)
+            ax.set_xlabel("Date", fontsize=12)
+    
+            # Định dạng ngày trục X
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+            fig.autofmt_xdate(rotation=45)
+    
+            # Trục ngang 0
             ax.axhline(0, color='gray', linestyle='--', linewidth=0.5)
+    
+            # Giao diện đẹp
+            ax.grid(True, linestyle='--', alpha=0.4)
+            ax.set_facecolor('#f9f9f9')
+            fig.patch.set_facecolor('#f9f9f9')
             st.pyplot(fig)
 
 
