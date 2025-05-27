@@ -60,8 +60,6 @@ if st.session_state["page"] == "login":
 
 # ========== JOURNAL ==========
 elif st.session_state.get("page") == "mood_journal":
-    st.title("🧠 Mood Journal")
-
     # ========= Đa ngôn ngữ =========
     LANGUAGE_MAP = {
         "English": {
