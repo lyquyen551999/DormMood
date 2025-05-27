@@ -221,14 +221,14 @@ elif st.session_state["page"] == "mood_journal":
     timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
     if timeline_entries:
         st.subheader("🕰️ " + L["timeline"])
-        for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):
-            emo = e.get("emotion", "Neutral")
-         
+        for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):       
+            
+            emo = e.get("emotion", "Neutral").strip().capitalize()
             if emo in EMOTION_SCORE_MAP:
                 emoji = EMOTION_SCORE_MAP[emo][0]
             else:
                 emoji = "❓"
-             
+                
             text = e.get("text", "")
             ts = e.get("timestamp")
             time_str = datetime.fromtimestamp(ts).strftime("%d/%m %H:%M") if ts else ""
