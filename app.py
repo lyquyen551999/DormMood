@@ -188,11 +188,11 @@ elif st.session_state["page"] == "mood_journal":
         if entries:
             daily_scores = defaultdict(list)
             for e in entries:
-                emo = e.get("emotion")
+                emo = e.get("emotion", "").strip().capitalize()
                 ts = e.get("timestamp")
                 if ts and emo in EMOTION_SCORE_MAP:
-                    date = datetime.fromtimestamp(ts).date()
-                    daily_scores[date].append(EMOTION_SCORE_MAP[emo][1])
+                    dt = datetime.fromtimestamp(ts)
+                    daily_scores[dt].append(EMOTION_SCORE_MAP[emo][1])
 
             if daily_scores:
                 avg_scores = {
@@ -207,7 +207,7 @@ elif st.session_state["page"] == "mood_journal":
                 ax.set_ylabel(L["mood_score"])
                 ax.grid(True, linestyle="--", alpha=0.3)
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M"))
-                ax.xaxis.set_major_locator(MaxNLocator(nbins=7))  # hạn chế số lượng nhãn
+                ax.xaxis.set_major_locator(MaxNLocator(nbins=7))
                 plt.xticks(rotation=45)
                 st.pyplot(fig)
 
