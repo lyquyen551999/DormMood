@@ -161,6 +161,10 @@ elif st.session_state.get("page") == "mood_journal":
                 suggestion = random.choice(SAD_ACTION_SUGGESTIONS[lang])
                 st.info(f"{L['suggestion']} {suggestion}")
 
+    if st.button(L["view_chart"]):
+    st.session_state["view_chart"] = True
+    st.rerun()
+    
     if st.session_state.get("view_chart"):
         st.markdown("### 📈 " + {
             "en": "Mood Trend Over Time",
@@ -213,6 +217,22 @@ elif st.session_state.get("page") == "mood_journal":
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             fig.autofmt_xdate()
             st.pyplot(fig)
+
+        if st.button(L["view_chart"]):
+        st.session_state["view_chart"] = True
+        st.rerun()
+    
+        if st.session_state.get("view_chart"):
+            if st.button("🔙 " + {
+                "English": "Back to Journal",
+                "Vietnamese": "Quay lại nhật ký",
+                "繁體中文": "返回日記"
+            }[lang]):
+                st.session_state["view_chart"] = False
+                st.rerun()
+
+ 
+
 
 
 
