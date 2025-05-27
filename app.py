@@ -54,57 +54,58 @@ if st.session_state["page"] == "login":
 # ========== JOURNAL ==========
 elif st.session_state["page"] == "mood_journal":
     st.title("📔 Mood Journal")
-    st.write(f"Welcome, user: **{st.session_state.get('nickname', st.session_state['user_token'])}**")
 
-    mood = st.selectbox("How do you feel today?", ["😊 Happy", "😢 Sad", "😠 Angry", "😰 Anxious", "😴 Tired"])
-    note = st.text_area("Write your thoughts...")
+    def detect_emotion_vader(text):
+        analyzer = SentimentIntensityAnalyzer()
+        score = analyzer.polarity_scores(text)["compound"]
+    
+        if score > 0.5:
+            return "😊 Happy"
+        elif score > 0.2:
+            return "🙂 Content"
+        elif score > -0.2:
+            return "😐 Neutral"
+        elif score > -0.5:
+            return "😟 Sad"
+        else:
+            return "😢 Depressed"
 
-    if st.button("Submit Entry"):
-        with open("mood_log.txt", "a", encoding="utf-8") as f:
-            f.write(f"{st.session_state['user_token']}: {mood} - {note}\n")
-        st.success("Entry saved!")
+    user_id = st.session_state.get("user_token")
+    nickname = st.session_state.get("nickname", f"User-{user_id[-5:]}")
 
-    if st.button("View My Timeline"):
-        st.subheader("🕒 Mood Timeline")
-        with open("mood_log.txt", "r", encoding="utf-8") as f:
-            entries = f.readlines()
-            for line in entries:
-                if st.session_state["user_token"] in line:
-                    st.markdown(f"- {line.strip()}")
+    st.markdown(f"Welcome, user: **{user_id}**")
 
-    if st.button("🗣️ 我要傾訴"):
-        st.session_state["latest_emotion"] = mood
-        st.session_state["page"] = "chat_match"
-        st.rerun()
+    # Emoji dropdown
+    emoji_options = ["😊 Happy", "🙂 Content", "😐 Neutral", "😟 Sad", "😢 Depressed"]
+    selected_emoji = st.selectbox("How do you feel today?", emoji_options, key="emoji_dropdown")
 
-    if st.button("Log out"):
-        db.reference("/waiting_list").child(st.session_state["user_token"]).delete()
-        st.session_state.pop("matching_initialized", None)
-        db.reference("/match_confirmations").child(st.session_state["user_token"]).delete()
-        st.session_state.clear()
-        st.rerun()
+    # Tâm sự
+    user_text = st.text_area("Write your thoughts...", key="journal_text_area")
 
-def detect_emotion_vader(text):
-    analyzer = SentimentIntensityAnalyzer()
-    score = analyzer.polarity_scores(text)["compound"]
+    if st.button("Submit Entry", key="submit_journal"):
+        # Nếu người dùng chưa chọn emoji, tự detect
+        if not selected_emoji or selected_emoji.strip() == "":
+            selected_emoji = detect_emotion_vader(user_text)
+            st.info(f"✨ Automatically detected emotion: {selected_emoji}")
 
-    if score > 0.5:
-        return "😊 Happy"
-    elif score > 0.2:
-        return "🙂 Content"
-    elif score > -0.2:
-        return "😐 Neutral"
-    elif score > -0.5:
-        return "😟 Sad"
-    else:
-        return "😢 Depressed"
+        entry_ref = db.reference("/journal_entries").push()
+        entry_ref.set({
+            "user_id": user_id,
+            "emotion": selected_emoji,
+            "text": user_text,
+            "timestamp": time.time()
+        })
+        st.success("Your entry has been saved!")
 
-user_text = st.text_area("Write your thoughts...")
-
-if user_text and st.button("Detect Emotion"):
-    auto_emotion = detect_emotion(user_text)
-    st.success(f"✨ Suggested Emotion: {auto_emotion}")
-    st.session_state["latest_emotion"] = auto_emotion
+    # Timeline
+    if st.button("View My Timeline", key="view_timeline"):
+        timeline_ref = db.reference("/journal_entries").order_by_child("user_id").equal_to(user_id).get()
+        st.markdown("### 🕰️ Mood Timeline")
+        if timeline_ref:
+            for _, entry in sorted(timeline_ref.items(), key=lambda x: x[1]["timestamp"], reverse=True):
+                st.markdown(f"- **{user_id}**: {entry['emotion']} - {entry['text']}")
+        else:
+            st.info("No entries found.")
 
 
 # ========== CHAT MATCH ==========
