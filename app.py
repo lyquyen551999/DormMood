@@ -12,6 +12,8 @@ from matplotlib import dates as mdates
 import random
 from collections import defaultdict
 from matplotlib.ticker import MaxNLocator
+import pytz
+
 
 st.set_page_config(page_title="DormMood", page_icon="🔐", layout="centered")
 
@@ -194,8 +196,9 @@ elif st.session_state["page"] == "mood_journal":
             for e in entries:
                 emo = e.get("emotion", "").strip().capitalize()
                 ts = e.get("timestamp")
+                tz = pytz.timezone("Asia/Taipei")
                 if ts and emo in EMOTION_SCORE_MAP:
-                    dt = datetime.fromtimestamp(ts)
+                    dt = datetime.fromtimestamp(ts, tz)
                     dates.append(dt)
                     scores.append(EMOTION_SCORE_MAP[emo][1])
 
