@@ -1,12 +1,17 @@
 import streamlit as st
 from auth_firebase import firebase_login, firebase_register
+import uuid
 import time
+import threading
 from firebase_admin import db
 from chat_firebase import ChatFirebase
 from datetime import datetime, timedelta
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
+from matplotlib import dates as mdates
 import random
+from collections import defaultdict
+from matplotlib.ticker import MaxNLocator
 import pytz
 
 
@@ -425,5 +430,3 @@ elif st.session_state["page"] == "international_community":
     if st.button("🔙 Back to Journal"):
         st.session_state["page"] = "mood_journal"
         st.rerun()
-
-
