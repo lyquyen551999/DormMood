@@ -243,8 +243,8 @@ elif st.session_state["page"] == "mood_journal":
                 st.pyplot(fig)
             else:
                 st.info("📭 No mood scores yet.")
-    else:
-        st.info("📭 No entries found.")
+        else:
+            st.info("📭 No entries found.")
         
     # Timeline bên dưới
     all_entries = db.reference("/journal_entries").get() or {}
