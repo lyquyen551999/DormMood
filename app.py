@@ -141,16 +141,16 @@ elif st.session_state["page"] == "mood_journal":
         "Depressed": ("🥺", -2)
     }
 
-lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
-L = LANGUAGE_MAP[lang]
-st.session_state["lang"] = lang
-st.title(L["title"])
-
-user_id = st.session_state.get("user_token", "demo")
-# Kiểm tra và chọn quốc tịch
-user_ref = db.reference("/users").child(user_id)
-user_info = user_ref.get() or {}
+    lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
+    L = LANGUAGE_MAP[lang]
+    st.session_state["lang"] = lang
+    st.title(L["title"])
     
+    user_id = st.session_state.get("user_token", "demo")
+    # Kiểm tra và chọn quốc tịch
+    user_ref = db.reference("/users").child(user_id)
+    user_info = user_ref.get() or {}
+        
     if "nationality" not in user_info:
         nationality = st.selectbox("🌍 Please select your nationality:", [
             "Vietnam 🇻🇳", "Taiwan 🇹🇼", "Japan 🇯🇵", "USA 🇺🇸", "Thailand 🇹🇭", "Korea 🇰🇷", "Indonesia 🇮🇩", "Others 🌐"
@@ -160,9 +160,9 @@ user_info = user_ref.get() or {}
             st.success("✅ Nationality saved!")
             st.rerun()
         st.stop()  # ⛔ Ngừng hiển thị phần còn lại nếu chưa chọn quốc tịch
-
+    
     analyzer = SentimentIntensityAnalyzer()
-
+    
     user_text = st.text_area(L["write_thoughts"], key="journal_input")
     if st.button(L["submit"]):
         if user_text:
@@ -173,9 +173,9 @@ user_info = user_ref.get() or {}
                 emotion = "Depressed"
             else:
                 emotion = "Neutral"
-
+    
             emoji, mood_score = EMOTION_SCORE_MAP[emotion]
-
+    
             db.reference("/journal_entries").push({
                 "user_id": user_id,
                 "text": user_text,
@@ -184,96 +184,96 @@ user_info = user_ref.get() or {}
                 "timestamp": time.time(),
                 "score": mood_score
             })
-
+    
             st.session_state["latest_emotion"] = emoji
             st.success(f"{L['saved']} {emoji} {emotion}")
-
+    
             if emotion == "Depressed":
                 st.info(f"{L['suggestion']} {random.choice(SAD_ACTION_SUGGESTIONS[lang])}")
         else:
             st.warning("⚠ Please enter some text.")
-
+    
     # Nút hiển thị biểu đồ
     if st.button(L["view_chart"]):
         st.session_state["view_chart"] = True
         st.rerun()
-
+    
     if st.button("💬 I want to talk to someone"):
         st.session_state["page"] = "chat_match"
         st.rerun()
 
 
-# Nếu ở chế độ xem biểu đồ
-if st.session_state.get("view_chart"):
-
-    if st.button("🔙 " + L["back"]):
-        st.session_state["view_chart"] = False
-        st.rerun()
-
-    all_entries = db.reference("/journal_entries").get() or {}
-    now = datetime.now(tz)
-    seven_days_ago = now - timedelta(days=7)
-
-    # Lọc dữ liệu 7 ngày gần nhất
-    entries = [
-        e for e in all_entries.values()
-        if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
-    ]
-
-    entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
-
-    if entries:
-        dates = []
-        scores = []
-        for e in entries:
-            emo = e.get("emotion", "").strip().capitalize()
-            ts = e.get("timestamp")
-            if ts and emo in EMOTION_SCORE_MAP:
-                dt = datetime.fromtimestamp(ts, tz)  # ✅ ĐÃ SỬA: đúng timezone
-                dates.append(dt)
-                scores.append(EMOTION_SCORE_MAP[emo][1])
-
-        if dates and scores:
-            fig, ax = plt.subplots()
-            ax.plot(dates, scores, marker='o')
-            ax.set_title(L["chart_title"])
-            ax.set_xlabel(L["date"])
-            ax.set_ylabel(L["mood_score"])
-            ax.grid(True, linestyle="--", alpha=0.3)
-            ts = e.get("timestamp")
-            tz = pytz.timezone("Asia/Taipei")
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M", tz=tz))
-            ax.set_xticks(dates)  # đặt đúng số lượng mốc thời gian trùng entries
-            plt.xticks(rotation=45)
-            st.pyplot(fig)
-        else:
-            st.info("📭 No mood scores yet.")
-    else:
-        st.info("📭 No entries found.")
-        
-    # Timeline bên dưới
-    all_entries = db.reference("/journal_entries").get() or {}
-    timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
-    if timeline_entries:
-        st.subheader("🕰️ " + L["timeline"])
-        if st.button("🗑️ Clear Timeline"):
-            for key in all_entries:
-                if all_entries[key].get("user_id") == user_id:
-                    db.reference("/journal_entries").child(key).delete()
+    # Nếu ở chế độ xem biểu đồ
+    if st.session_state.get("view_chart"):
+    
+        if st.button("🔙 " + L["back"]):
+            st.session_state["view_chart"] = False
             st.rerun()
-        for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):       
-            emo = e.get("emotion", "Neutral").strip().capitalize()
-            if emo in EMOTION_SCORE_MAP:
-                emoji = EMOTION_SCORE_MAP[emo][0]
+    
+        all_entries = db.reference("/journal_entries").get() or {}
+        now = datetime.now(tz)
+        seven_days_ago = now - timedelta(days=7)
+    
+        # Lọc dữ liệu 7 ngày gần nhất
+        entries = [
+            e for e in all_entries.values()
+            if e.get("user_id") == user_id and datetime.fromtimestamp(e.get("timestamp", 0), tz) >= seven_days_ago
+        ]
+    
+        entries = sorted(entries, key=lambda e: e.get("timestamp", 0))
+    
+        if entries:
+            dates = []
+            scores = []
+            for e in entries:
+                emo = e.get("emotion", "").strip().capitalize()
+                ts = e.get("timestamp")
+                if ts and emo in EMOTION_SCORE_MAP:
+                    dt = datetime.fromtimestamp(ts, tz)  # ✅ ĐÃ SỬA: đúng timezone
+                    dates.append(dt)
+                    scores.append(EMOTION_SCORE_MAP[emo][1])
+    
+            if dates and scores:
+                fig, ax = plt.subplots()
+                ax.plot(dates, scores, marker='o')
+                ax.set_title(L["chart_title"])
+                ax.set_xlabel(L["date"])
+                ax.set_ylabel(L["mood_score"])
+                ax.grid(True, linestyle="--", alpha=0.3)
+                ts = e.get("timestamp")
+                tz = pytz.timezone("Asia/Taipei")
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M", tz=tz))
+                ax.set_xticks(dates)  # đặt đúng số lượng mốc thời gian trùng entries
+                plt.xticks(rotation=45)
+                st.pyplot(fig)
             else:
-                emoji = "❓"
-            text = e.get("text", "")
-            ts = e.get("timestamp")
-            tz = pytz.timezone("Asia/Taipei")
-            time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
-            st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
-    else:
-        st.info("📭 No entries yet.")
+                st.info("📭 No mood scores yet.")
+        else:
+            st.info("📭 No entries found.")
+            
+        # Timeline bên dưới
+        all_entries = db.reference("/journal_entries").get() or {}
+        timeline_entries = [e for e in all_entries.values() if e.get("user_id") == user_id]
+        if timeline_entries:
+            st.subheader("🕰️ " + L["timeline"])
+            if st.button("🗑️ Clear Timeline"):
+                for key in all_entries:
+                    if all_entries[key].get("user_id") == user_id:
+                        db.reference("/journal_entries").child(key).delete()
+                st.rerun()
+            for e in sorted(timeline_entries, key=lambda x: x.get("timestamp", 0), reverse=True):       
+                emo = e.get("emotion", "Neutral").strip().capitalize()
+                if emo in EMOTION_SCORE_MAP:
+                    emoji = EMOTION_SCORE_MAP[emo][0]
+                else:
+                    emoji = "❓"
+                text = e.get("text", "")
+                ts = e.get("timestamp")
+                tz = pytz.timezone("Asia/Taipei")
+                time_str = datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M") if ts else ""
+                st.markdown(f"- **{emoji} {emo}** ({time_str}): {text}")
+        else:
+            st.info("📭 No entries yet.")
 
 # ========== CHAT MATCH ==========
 elif st.session_state["page"] == "chat_match":
