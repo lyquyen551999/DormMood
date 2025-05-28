@@ -52,7 +52,7 @@ if st.session_state["page"] == "login":
                 success, result = firebase_register(new_email, new_password)
                 if success:
                     st.session_state["user_token"] = result["localId"]
-                    st.session_state["page"] = "mood_journal"
+                    st.session_state["page"] = "_journal"
                     st.rerun()
                 else:
                     st.error("Registration failed")
@@ -60,7 +60,7 @@ if st.session_state["page"] == "login":
 
 
 # ========== JOURNAL ==========
-elif st.session_state["page"] == "mood_journal":
+elif st.session_state["page"] == "_journal":
     
     if st.button("🌏 Visit International Community"):
         st.session_state["page"] = "international_community"
@@ -77,7 +77,7 @@ elif st.session_state["page"] == "mood_journal":
             "saved": "✅ Entry saved with emotion:",
             "suggestion": "🧠 Suggested action:",
             "view_chart": "📈 View Mood Chart",
-            "chart_title": "📈 Mood Trend Over Time",
+            "chart_title": "Mood Trend Over Time",
             "date": "Date",
             "mood_score": "Mood Score",
             "timeline": "Mood Timeline",
