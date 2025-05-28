@@ -207,7 +207,7 @@ elif st.session_state["page"] == "mood_journal":
 if st.session_state.get("view_chart"):
     
     lang = st.session_state.get("lang", "English")
-    L = LANGUAGE_MAP.get(lang, LANGUAGE_MAP["English"])
+    L = LANGUAGE_MAP[lang]
 
     if st.button("🔙 " + L["back"]):
         st.session_state["view_chart"] = False
