@@ -241,7 +241,7 @@ if st.session_state.get("view_chart"):
             ax.grid(True, linestyle="--", alpha=0.3)
             ts = e.get("timestamp")
             tz = pytz.timezone("Asia/Taipei")
-            ax.xaxis.set_major_formatter(datetime.fromtimestamp(ts, tz).strftime("%d/%m %H:%M"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M", tz=tz))
             ax.set_xticks(dates)  # đặt đúng số lượng mốc thời gian trùng entries
             plt.xticks(rotation=45)
             st.pyplot(fig)
