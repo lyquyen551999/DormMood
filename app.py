@@ -141,15 +141,15 @@ elif st.session_state["page"] == "mood_journal":
         "Depressed": ("🥺", -2)
     }
 
-    lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
-    L = LANGUAGE_MAP[lang]
-    st.session_state["lang"] = lang
-    st.title(L["title"])
+lang = st.selectbox("🌐 Language / Ngôn ngữ / 語言", list(LANGUAGE_MAP.keys()))
+L = LANGUAGE_MAP[lang]
+st.session_state["lang"] = lang
+st.title(L["title"])
 
-    user_id = st.session_state.get("user_token", "demo")
-    # Kiểm tra và chọn quốc tịch
-    user_ref = db.reference("/users").child(user_id)
-    user_info = user_ref.get() or {}
+user_id = st.session_state.get("user_token", "demo")
+# Kiểm tra và chọn quốc tịch
+user_ref = db.reference("/users").child(user_id)
+user_info = user_ref.get() or {}
     
     if "nationality" not in user_info:
         nationality = st.selectbox("🌍 Please select your nationality:", [
@@ -205,9 +205,6 @@ elif st.session_state["page"] == "mood_journal":
 
 # Nếu ở chế độ xem biểu đồ
 if st.session_state.get("view_chart"):
-    
-    lang = st.session_state.get("lang", "English")
-    L = LANGUAGE_MAP[lang]
 
     if st.button("🔙 " + L["back"]):
         st.session_state["view_chart"] = False
